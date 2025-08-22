@@ -1,18 +1,31 @@
 # Contributing to ScriptGenius
 
-First off, thanks for taking the time to contribute! 🎉 We're excited to have you on board.
+Thank you for your interest in contributing to ScriptGenius! We're excited to have you on board. 🚀
 
 ## 📋 Code of Conduct
 
-This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code.
+This project adheres to our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code.
 
 ## 🛠 Getting Started
 
 1. **Fork** the repository on GitHub
-2. **Clone** the project to your own machine
-3. **Commit** changes to your own branch
-4. **Push** your work back up to your fork
-5. Submit a **Pull Request** so we can review your changes
+2. **Clone** your forked repository
+   ```bash
+   git clone https://github.com/your-username/scriptgenius.git
+   cd scriptgenius
+   ```
+3. **Set up** the development environment
+   ```bash
+   npm install
+   cp .env.example .env.local
+   ```
+4. **Create a branch** for your changes
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+5. **Commit** your changes with a descriptive message
+6. **Push** to your fork
+7. Open a **Pull Request**
 
 ## 🔧 Development Setup
 
@@ -21,34 +34,61 @@ This project and everyone participating in it is governed by our [Code of Conduc
    npm install
    ```
 
-2. Set up environment variables (copy `.env.example` to `.env.local` and fill in the values)
+2. Set up environment variables in `.env.local` (see `.env.example` for required variables)
 
 3. Start the development server:
    ```bash
    npm run dev
    ```
 
-## 📝 Pull Request Process
+4. Run the test suite:
+   ```bash
+   npm test
+   ```
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
-2. Update the README.md with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations, and container parameters.
-3. You may merge the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
+## 📝 Pull Request Guidelines
+
+1. **Branch Naming**: Use the format `feature/description` or `fix/issue-number`
+2. **Commit Messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/)
+3. **Testing**: Ensure all new code is covered by tests
+4. **Documentation**: Update relevant documentation (README, JSDoc, etc.)
+5. **Linting**: Run `npm run lint` before committing
+6. **Formatting**: Use `npm run format` to format your code
 
 ## 🧪 Testing
 
-Please ensure all new code is covered by tests. Run the test suite with:
+We use Jest and React Testing Library for testing. Please ensure:
 
+- New features include unit tests
+- Bug fixes include regression tests
+- UI components include interaction tests
+
+Run tests with coverage:
 ```bash
-npm test
+npm test -- --coverage
 ```
 
 ## 🧹 Code Style
 
-- Use TypeScript for all new code
-- Follow the [TypeScript style guide](https://google.github.io/styleguide/tsguide.html)
-- Use Prettier for code formatting
-- Use ESLint for static analysis
+- **TypeScript**: Strict mode enabled
+- **Naming**: Use clear, descriptive names
+- **Components**: Use functional components with TypeScript
+- **Hooks**: Follow the Rules of Hooks
+- **Formatting**: Prettier + ESLint (configured in the project)
+- **Imports**: Group and sort imports (external first, then internal)
+
+## 🚀 Deployment
+
+- Main branch is automatically deployed to production
+- All tests must pass before merging to main
+- Versioning follows Semantic Versioning (SemVer)
+
+## 🤝 Need Help?
+
+- Check the [issues](https://github.com/your-username/scriptgenius/issues)
+- Join our [Discord/Slack]()
+- Email us at support@scriptgenius.app
 
 ## 📄 License
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).

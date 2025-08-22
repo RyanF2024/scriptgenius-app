@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { AIService } from '@/lib/ai';
-import { ScriptChunker } from '@/lib/ai/utils/chunking';
-import { PromptManager } from '@/lib/ai/prompts';
+import { ScriptAnalyzer } from '@/lib/script/analysis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase/ssr';
+import { ScriptAnalysisOptions } from '@/lib/ai/types/analysis';
 
 // Initialize rate limiter (5 requests per minute per user)
 const ratelimit = new Ratelimit({
@@ -37,11 +36,23 @@ export async function POST(req: Request) {
     }
 
     // Parse request body
-    const { script, reportType, persona, title, genre } = await req.json();
+    const { script, reportType, persona, title, genre, targetAudience, options } = await req.json();
     
-    if (!script || !reportType) {
-      return new NextResponse('Missing required fields', { status: 400 });
+    if (!script) {
+      return new NextResponse('Script content is required', { status: 400 });
     }
+    
+    // Set analysis options
+    const analysisOptions: ScriptAnalysisOptions = {
+      analyzeStructure: true,
+      analyzeDialogue: true,
+      analyzeCharacters: true,
+      analyzeSentiment: true,
+      checkFormatting: true,
+      genre,
+      targetAudience,
+      ...options
+    };
 
     // Check user's subscription status
     const { data: profile, error } = await supabaseAdmin
@@ -62,42 +73,62 @@ export async function POST(req: Request) {
       return new NextResponse('Insufficient credits or inactive subscription', { status: 402 });
     }
 
-    // Initialize AI service and chunker
-    const aiService = AIService.getInstance();
-    const chunker = new ScriptChunker();
-    
-    // Chunk the script if needed
-    const chunks = chunker.chunkText(script);
-    let fullAnalysis = '';
-    
-    // Process each chunk
-    for (const [index, chunk] of chunks.entries()) {
-      const messages = PromptManager.prepareMessages(
-        chunk,
-        reportType,
-        persona || 'general',
-        { title, genre, chunk: `${index + 1}/${chunks.length}` }
-      );
+    try {
+      // Initialize script analyzer
+      const analyzer = new ScriptAnalyzer(script);
+      
+      // Perform analysis
+      const analysisResult = await analyzer.analyze(analysisOptions);
+      
+      // If report type is specified, generate a more detailed report using AI
+      if (reportType) {
+        const aiService = AIService.getInstance();
+        const prompt = `Generate a ${reportType} report for the following script analysis:
+        
+Script Title: ${title || 'Untitled'}
+Genre: ${genre || 'Not specified'}
+Target Audience: ${targetAudience || 'General'}
 
-      const response = await aiService.generateText({
-        messages,
-        modelConfig: {
-          provider: 'openai', // Default to OpenAI, can be made configurable
-          model: 'gpt-4',
-          temperature: 0.7,
-          maxTokens: 2000,
-        },
-      });
+Analysis Summary:
+${JSON.stringify(analysisResult.metrics, null, 2)}
 
-      fullAnalysis += response.content + '\n\n';
-    }
+Please provide a detailed ${reportType} report focusing on ${persona || 'general'} perspective.`;
+
+        const response = await aiService.generateText({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a professional script analyst. Provide a detailed report based on the script analysis.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          modelConfig: {
+            provider: 'openai',
+            model: 'gpt-4',
+            temperature: 0.7,
+            maxTokens: 2000,
+          },
+        });
+
+        // Combine analysis with AI-generated report
+        analysisResult.summary = response.content;
+      }
 
     // Deduct credit if not on subscription
     if (!hasActiveSubscription) {
-      await supabaseAdmin.rpc('decrement_credits', {
+      const { error: creditError } = await supabaseAdmin.rpc('decrement_credits', {
         user_id: session.user.id,
         amount: 1,
       });
+      
+      if (creditError) {
+        console.error('Error deducting credits:', creditError);
+        // Continue with the response even if credit deduction fails
+        // Log this for admin review
+      }
     }
 
     // Log the analysis
@@ -106,17 +137,23 @@ export async function POST(req: Request) {
       script_title: title || 'Untitled',
       report_type: reportType,
       persona: persona || 'general',
-      content: fullAnalysis,
+      content: analysisResult,
       credits_used: hasActiveSubscription ? 0 : 1,
     });
 
-    return NextResponse.json({ analysis: fullAnalysis });
+    return NextResponse.json(analysisResult);
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Analysis error:', error);
     return new NextResponse(
-      error.message || 'Internal Server Error',
-      { status: 500 }
+      JSON.stringify({
+        error: 'Failed to analyze script',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
-  }
+  } 
 }
