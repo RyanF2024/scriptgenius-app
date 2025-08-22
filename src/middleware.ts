@@ -1,10 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { CookieOptions } from '@supabase/ssr';
+import { withSubscriptionMiddleware } from './middleware/subscription';
 
 // Define protected and public routes as readonly arrays
 const protectedRoutes = ['/dashboard', '/account', '/billing'] as const;
-const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'] as const;
+const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/pricing'] as const;
 
 // Type for cookie options
 type CookieOptionsType = {
@@ -19,14 +20,20 @@ export async function middleware(request: NextRequest) {
   // Skip middleware for static files, API routes, and auth callback
   const shouldSkip = [
     pathname.startsWith('/_next'),
-    pathname.startsWith('/api'),
     pathname.startsWith('/static'),
     pathname.includes('.'),
     pathname.startsWith('/auth/callback'),
+    pathname === '/',
+    pathname.startsWith('/api/webhooks'), // Skip webhook endpoints
   ].some(Boolean);
 
   if (shouldSkip) {
     return NextResponse.next();
+  }
+
+  // Apply subscription middleware for protected routes
+  if (pathname.startsWith('/app') || pathname.startsWith('/api/ai')) {
+    return withSubscriptionMiddleware(request);
   }
 
   let response = NextResponse.next({

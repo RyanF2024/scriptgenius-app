@@ -1,19 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-  typescript: true,
-});
-
-// Initialize Supabase
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { SubscriptionService } from '@/lib/services/subscriptionService';
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -36,27 +24,26 @@ export async function POST(req: Request) {
     );
   }
 
-  // Handle the event
+  // Handle the event using our subscription service
   try {
+    await SubscriptionService.handleWebhookEvent(event);
+    
+    // Special handling for specific events if needed
     switch (event.type) {
-      case 'customer.subscription.created':
+      case 'checkout.session.completed':
+        // Handle any post-checkout actions
+        break;
       case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionChange(subscription);
+      case 'customer.subscription.deleted':
+      case 'invoice.payment_succeeded':
+        // These are handled by the subscription service
         break;
-      }
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handlePaymentSucceeded(invoice);
-        break;
-      }
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        await handlePaymentFailed(invoice);
+        // Handle payment failure (e.g., send notification to user)
+        console.log('Payment failed:', invoice.id);
         break;
       }
-      // Add more event types as needed
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -71,89 +58,21 @@ export async function POST(req: Request) {
   }
 }
 
-async function handleSubscriptionChange(subscription: Stripe.Subscription) {
-  const customerId = subscription.customer as string;
-  const subscriptionId = subscription.id;
-  const status = subscription.status;
-  const priceId = subscription.items.data[0].price.id;
-  
-  // Get the user from the database
-  const { data: user, error: userError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('stripe_customer_id', customerId)
-    .single();
+// All subscription handling is now in the SubscriptionService
+// async function handleSubscriptionChange(subscription: Stripe.Subscription) {
+//   // ...
+// }
 
-  if (userError || !user) {
-    console.error('User not found for customer ID:', customerId);
-    return;
-  }
+// Payment handling is now in the SubscriptionService
+// async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+//   // ...
+// }
 
-  // Update the user's subscription status
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
-      subscription_status: status,
-      subscription_tier: getTierFromPriceId(priceId),
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', user.id);
+// async function handlePaymentFailed(invoice: Stripe.Invoice) {
+//   // ...
+// }
 
-  if (updateError) {
-    console.error('Error updating user subscription:', updateError);
-  }
-}
-
-async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-  const customerId = invoice.customer as string;
-  const amountPaid = invoice.amount_paid;
-  
-  // Log the successful payment
-  const { error: logError } = await supabase
-    .from('activity_logs')
-    .insert({
-      user_id: customerId,
-      action: 'payment_succeeded',
-      resource_type: 'invoice',
-      resource_id: invoice.id,
-      metadata: {
-        amount: amountPaid,
-        currency: invoice.currency,
-        invoice_url: invoice.hosted_invoice_url
-      }
-    });
-
-  if (logError) {
-    console.error('Error logging payment success:', logError);
-  }
-}
-
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const customerId = invoice.customer as string;
-  
-  // Log the failed payment
-  const { error: logError } = await supabase
-    .from('activity_logs')
-    .insert({
-      user_id: customerId,
-      action: 'payment_failed',
-      resource_type: 'invoice',
-      resource_id: invoice.id,
-      metadata: {
-        attempt: invoice.attempt_count,
-        next_payment_attempt: invoice.next_payment_attempt
-      }
-    });
-
-  if (logError) {
-    console.error('Error logging payment failure:', logError);
-  }
-}
-
-// Helper function to map price IDs to subscription tiers
-function getTierFromPriceId(priceId: string): string {
-  // Add your price ID to tier mapping logic here
-  if (priceId.includes('premium')) return 'premium';
-  if (priceId.includes('pro')) return 'pro';
-  return 'free';
-}
+// Tier mapping is now handled by the subscription service
+// function getTierFromPriceId(priceId: string): string {
+//   // ...
+// }
