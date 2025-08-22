@@ -1,0 +1,15 @@
+# Default reviewers for the entire repository
+* @your-github-username
+
+# Specific paths and their owners
+/src/app/ @your-github-username
+/src/components/ @your-github-username
+/src/lib/ @your-github-username
+
+# Configuration files
+/package.json @your-github-username
+/tsconfig.json @your-github-username
+
+# Documentation
+/README.md @your-github-username
+/CONTRIBUTING.md @your-github-username
