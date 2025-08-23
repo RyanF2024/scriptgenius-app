@@ -47,17 +47,34 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     
+    // Source Maps
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    
+    // Experimental
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    
+    // Other
+    "composite": true,
+    "noErrorTruncation": true,
+    "preserveWatchOutput": true,
+    "pretty": true,
+    "types": ["node", "jest", "@testing-library/jest-dom"],
+    
+    // Type Checking
+    "useUnknownInCatchVariables": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "verbatimModuleSyntax": true,
+    
     // Plugins
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    // Type Checking
-    "useUnknownInCatchVariables": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "verbatimModuleSyntax": true
+    ]
   },
   "include": [
     "next-env.d.ts",
