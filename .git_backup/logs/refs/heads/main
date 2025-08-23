@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 848bcdb9f2a1746065ae56fbd02d72011777f5a9 Ryan Fortune <ryanfortunecomms@gmail.com> 1755885764 +0200	commit (initial): Initial commit
+848bcdb9f2a1746065ae56fbd02d72011777f5a9 848bcdb9f2a1746065ae56fbd02d72011777f5a9 Ryan Fortune <ryanfortunecomms@gmail.com> 1755885766 +0200	Branch: renamed refs/heads/temp_branch to refs/heads/main
+848bcdb9f2a1746065ae56fbd02d72011777f5a9 a46c542a214842c6e52fbdac033c2ccedf80c207 Ryan Fortune <ryanfortunecomms@gmail.com> 1755896920 +0200	commit: feat: Add subscription and billing system with Stripe integration
+a46c542a214842c6e52fbdac033c2ccedf80c207 8b78860a14dcc39e352e36c4ecf43daa71a81929 Ryan Fortune <ryanfortunecomms@gmail.com> 1755903483 +0200	commit: docs: update README and CONTRIBUTING with current project details

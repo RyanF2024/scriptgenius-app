@@ -1,0 +1,173 @@
+# ScriptGenius
+
+A professional screenwriting analysis platform that provides AI-powered script coverage, character analysis, and market insights. Built with Next.js, TypeScript, and Supabase.
+
+## 🚀 Features
+
+- **AI-Powered Analysis** - Get instant script coverage, character breakdowns, and market analysis
+- **Multi-Format Support** - Upload scripts in various formats including PDF and Fountain
+- **Team Collaboration** - Share and collaborate on scripts with your team
+- **Subscription Plans** - Flexible pricing with free and premium tiers
+- **Secure & Private** - Enterprise-grade security for your intellectual property
+
+## 🛠️ Tech Stack
+
+- **Frontend**: [Next.js 14](https://nextjs.org/) with App Router
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + Shadcn/ui
+- **Authentication**: [Supabase Auth](https://supabase.com/auth)
+- **Database**: [Supabase](https://supabase.com/) (PostgreSQL)
+- **AI Integration**: OpenAI, Anthropic, Google AI
+- **File Storage**: Supabase Storage
+- **Payments**: Stripe Integration
+- **State Management**: React Context + SWR
+- **Form Handling**: React Hook Form + Zod
+- **Testing**: Jest + React Testing Library
+
+## 🏁 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Supabase account
+- Stripe account (for payments)
+- AI Provider API Keys (OpenAI, Anthropic, or Google AI)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/scriptgenius.git
+   cd scriptgenius
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   - Copy `.env.example` to `.env.local`
+   - Fill in the required credentials (Supabase, Stripe, AI providers)
+
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) with your browser.
+
+## 🔧 Environment Variables
+
+Create a `.env.local` file in the root directory. See `.env.example` for all required variables:
+
+```
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# AI Providers
+OPENAI_API_KEY=your-openai-key
+ANTHROPIC_API_KEY=your-anthropic-key
+GOOGLE_AI_KEY=your-google-ai-key
+
+# Stripe
+STRIPE_SECRET_KEY=your-stripe-secret-key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
+STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+
+# Other
+NODE_ENV=development
+```
+
+## 🚀 Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+- `npm test` - Run tests
+- `npm run type-check` - Check TypeScript types
+- `npm run analyze` - Run bundle analysis
+
+### Database Migrations
+
+To apply database migrations:
+
+```bash
+npx supabase migration up
+```
+
+### Testing
+
+Run the test suite:
+
+```bash
+npm test
+```
+
+Run tests in watch mode:
+
+```bash
+npm test -- --watch
+```
+
+### Deployment
+
+1. Build the application:
+   ```bash
+   npm run build
+   ```
+
+2. Start the production server:
+   ```bash
+   npm start
+   ```
+
+3. For production deployment, consider using:
+   - Vercel (recommended for Next.js)
+   - Docker + any cloud provider
+
+## 🏗️ Project Structure
+
+```
+src/
+├── app/                    # App router pages and API routes
+├── components/             # Reusable UI components
+├── lib/                    # Utility functions and configurations
+│   ├── ai/                 # AI service implementations
+│   ├── api/                # API client and services
+│   └── utils/              # Helper functions
+├── types/                  # TypeScript type definitions
+└── styles/                 # Global styles and themes
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Shadcn/ui](https://ui.shadcn.com/)
+- [Stripe Documentation](https://stripe.com/docs)
+
+## 📞 Support
+
+For support, please open an issue or contact support@scriptgenius.app

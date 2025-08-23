@@ -1,0 +1,4 @@
+# pack-refs with: peeled fully-peeled sorted 
+e6ea6e28d3748fd02e8284115f9bc37092b5ac52 refs/heads/backup-before-cleanup
+e6ea6e28d3748fd02e8284115f9bc37092b5ac52 refs/remotes/origin/main
+c3fbcacd19e60b6e01164c6473f49af208950237 refs/stash

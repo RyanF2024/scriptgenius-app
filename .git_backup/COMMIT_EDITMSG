@@ -1,0 +1,6 @@
+docs: update README and CONTRIBUTING with current project details
+
+- Update README with accurate project description, features, and setup instructions
+- Enhance CONTRIBUTING.md with detailed contribution guidelines
+- Add development workflow and testing instructions
+- Include environment variable documentation
