@@ -2,27 +2,44 @@
 
 A professional screenwriting analysis platform that provides AI-powered script coverage, character analysis, and market insights. Built with Next.js, TypeScript, and Supabase.
 
+## 📚 Documentation
+
+- [Master Checklist](MASTER_CHECKLIST.md) - Single source of truth for all project requirements and features
+- [Changelog](CHANGELOG.md) - Track all notable changes to the project
+- [API Documentation](/docs/API.md) - Detailed API reference (coming soon)
+- [User Guide](/docs/USER_GUIDE.md) - Getting started and feature guides (coming soon)
+
 ## 🚀 Features
 
-- **AI-Powered Analysis** - Get instant script coverage, character breakdowns, and market analysis
-- **Multi-Format Support** - Upload scripts in various formats including PDF and Fountain
-- **Team Collaboration** - Share and collaborate on scripts with your team
+- **AI-Powered Analysis** - Get instant script coverage, character breakdowns, and market analysis using multiple AI providers (OpenAI, Anthropic, Google AI)
+- **Multi-Format Support** - Upload scripts in various formats including PDF, Fountain, and FDX
+- **Comprehensive Reports** - Generate detailed PDF reports with different analysis perspectives
+- **Team Collaboration** - Share and collaborate on scripts with your team (coming soon)
 - **Subscription Plans** - Flexible pricing with free and premium tiers
 - **Secure & Private** - Enterprise-grade security for your intellectual property
 
 ## 🛠️ Tech Stack
 
+### Core
 - **Frontend**: [Next.js 14](https://nextjs.org/) with App Router
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) + Shadcn/ui
 - **Authentication**: [Supabase Auth](https://supabase.com/auth)
 - **Database**: [Supabase](https://supabase.com/) (PostgreSQL)
-- **AI Integration**: OpenAI, Anthropic, Google AI
 - **File Storage**: Supabase Storage
 - **Payments**: Stripe Integration
+
+### AI & Analysis
+- **AI Providers**: OpenAI, Anthropic, Google AI
+- **Document Processing**: PDF.js, Fountain.js
+- **Report Generation**: React-PDF
+
+### Development Tools
 - **State Management**: React Context + SWR
 - **Form Handling**: React Hook Form + Zod
 - **Testing**: Jest + React Testing Library
+- **Linting**: ESLint + Prettier
+- **CI/CD**: GitHub Actions
 
 ## 🏁 Getting Started
 

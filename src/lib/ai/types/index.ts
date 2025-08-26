@@ -2,7 +2,12 @@
 export type AIProvider = 'openai' | 'anthropic' | 'google';
 
 // Analysis persona types
-export type AnalysisPersona = 'general' | 'hollywood' | 'independent' | 'character';
+export type BasePersona = 'general' | 'hollywood' | 'independent' | 'character';
+export type ExtendedPersona = BasePersona | 'execBuyer' | 'writerCoach';
+export type AnalysisPersona = ExtendedPersona; // For backward compatibility
+
+// Analysis tone types
+export type AnalysisTone = 'optimistic' | 'balanced' | 'critical';
 
 // Report types
 export type ReportType = 'coverage' | 'character' | 'structure' | 'dialogue' | 'market';
@@ -60,6 +65,15 @@ export interface ScriptAnalysisContext {
   analysisFocus?: string[];
 }
 
+// Analysis context
+export interface AnalysisContext {
+  title?: string;
+  genre?: string;
+  targetAudience?: string;
+  tone?: AnalysisTone;
+  [key: string]: unknown;
+}
+
 // Report template interface
 export interface ReportTemplate {
   id: string;
@@ -75,11 +89,12 @@ export interface ReportTemplate {
 export class AIError extends Error {
   constructor(
     message: string,
-    public readonly code: string,
+    public override readonly code: string,
     public readonly statusCode?: number,
-    public readonly details?: any
+    public readonly details?: unknown
   ) {
     super(message);
     this.name = 'AIError';
+    Object.setPrototypeOf(this, AIError.prototype);
   }
 }

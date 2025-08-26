@@ -72,7 +72,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const pathname = usePathname();
 
   // Handle auth state changes
   useEffect(() => {
