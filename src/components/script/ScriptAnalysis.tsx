@@ -1,13 +1,55 @@
-import React, { useRef, useState } from 'react';
+'use client';
+
+import { useRef, useState, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Upload, FileText, Download } from 'lucide-react';
-import useScriptAnalysis, { ScriptAnalysisOptions } from '@/hooks/useScriptAnalysis';
-import { Button } from '@/components/ui/button';
-import PDFReport from '../report/PDFReport';
-import usePDFExport from '@/hooks/usePDFExport';
+import { AlertCircle, Upload, FileText } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load heavy components
+const PDFReport = dynamic(
+  () => import('../report/PDFReport'),
+  { 
+    loading: () => <Skeleton className="h-[500px] w-full" />,
+    ssr: false 
+  }
+);
+
+const useScriptAnalysis = dynamic(
+  () => import('@/hooks/useScriptAnalysis').then(mod => mod.default),
+  { ssr: false }
+);
+
+const usePDFExport = dynamic(
+  () => import('@/hooks/usePDFExport').then(mod => mod.default),
+  { ssr: false }
+);
+
+type ScriptAnalysisOptions = {
+  analyzeStructure: boolean;
+  analyzeDialogue: boolean;
+  analyzeCharacters: boolean;
+  analyzeSentiment: boolean;
+  checkFormatting: boolean;
+};
+
+const AnalysisOptions = dynamic(
+  () => import('./AnalysisOptions').then(mod => mod.AnalysisOptions),
+  { 
+    loading: () => <Skeleton className="h-[200px] w-full" />,
+    ssr: false 
+  }
+);
+
+const AnalysisResult = dynamic(
+  () => import('./AnalysisResult'),
+  { 
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+    ssr: false 
+  }
+);
 
 export function ScriptAnalysis() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -21,9 +63,10 @@ export function ScriptAnalysis() {
     checkFormatting: true,
   });
 
-  const { analyzeScript, isLoading, error, result, reset } = useScriptAnalysis();
-  const { generatePDF } = usePDFExport();
-  const [showPDFPreview, setShowPDFPreview] = React.useState(false);
+  // Lazy load hooks only when needed
+  const { analyzeScript, isLoading, error, result, reset } = useScriptAnalysis?.() || {};
+  const { generatePDF } = usePDFExport?.() || {};
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,13 +84,13 @@ export function ScriptAnalysis() {
   };
 
   const handleAnalyze = async () => {
-    if (!scriptContent) return;
+    if (!scriptContent || !analyzeScript) return;
     
     try {
       await analyzeScript(
         scriptContent,
         options,
-        'comprehensive', // Report type
+        'comprehensive'
         'professional',   // Persona
         fileName || 'Untitled Script',
         'drama',          // Default genre
@@ -76,117 +119,59 @@ export function ScriptAnalysis() {
         </CardHeader>
         <CardContent>
           {!scriptContent ? (
-            <div 
-              className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="w-full"
             >
-              <div className="flex flex-col items-center justify-center space-y-2">
-                <Upload className="h-12 w-12 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Drag and drop your script file here, or click to select
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Supported formats: .fountain, .txt
-                </p>
+              <Upload className="mr-2 h-4 w-4" />
+              {fileName || 'Upload Script'}
+            </Button>
+            {fileName && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <FileText className="mr-2 h-4 w-4" />
+                {fileName}
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".fountain,.txt"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <FileText className="h-5 w-5 text-primary" />
-                <span className="font-medium">{fileName}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    setScriptContent('');
-                    setFileName('');
-                    reset();
-                  }}
-                >
-                  Change
-                </Button>
-              </div>
+            )}
+          </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Analysis Options</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(options).map(([key, value]) => (
-                      <label key={key} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={value as boolean}
-                          onChange={(e) => 
-                            handleOptionChange(key as keyof ScriptAnalysisOptions, e.target.checked)
-                          }
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm">
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+          <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+            <AnalysisOptions 
+              options={options} 
+              onOptionsChange={setOptions} 
+              disabled={isLoading}
+            />
+          </Suspense>
 
-                <Button 
-                  onClick={handleAnalyze} 
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  {isLoading ? 'Analyzing...' : 'Analyze Script'}
-                </Button>
-              </div>
-            </div>
+          <Button 
+            onClick={handleAnalyze} 
+            disabled={!scriptContent || isLoading}
+            className="w-full"
+          >
+            {isLoading ? 'Analyzing...' : 'Analyze Script'}
+          </Button>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {error instanceof Error ? error.message : 'An unknown error occurred'}
+              </AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
 
-      {isLoading && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Analyzing Script</CardTitle>
-            <CardDescription>This may take a moment...</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Progress value={50} className="h-2" />
-          </CardContent>
-        </Card>
-      )}
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {result && (
-        <div className="space-y-4">
-          <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowPDFPreview(!showPDFPreview)}
-            >
-              {showPDFPreview ? 'Hide Preview' : 'Preview PDF'}
-            </Button>
-            {generatePDF({
-              document: (
-                <PDFReport 
-                  analysis={result} 
-                  title={`${fileName || 'Script'} Analysis Report`}
-                />
-              ),
+        <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+          <AnalysisResult 
+            result={result} 
+            scriptContent={scriptContent}
+            fileName={fileName}
+            onExportPDF={generatePDF ? () => setShowPDFPreview(true) : undefined}
+          />
+        </Suspense>
+      )}
               fileName: `${fileName || 'script-analysis'}-${new Date().toISOString().split('T')[0]}.pdf`,
               buttonText: 'Download PDF',
               className: 'h-9 px-4 py-2'

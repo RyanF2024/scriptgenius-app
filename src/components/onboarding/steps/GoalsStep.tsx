@@ -6,8 +6,8 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { goalsSchema, type GoalsInput } from '@/lib/validations/onboarding';
+import { Form } from '@/components/ui/form';
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,

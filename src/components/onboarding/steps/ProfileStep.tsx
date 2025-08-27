@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { USER_ROLES } from '@/lib/constants';
 import { profileSchema, type ProfileInput } from '@/lib/validations/onboarding';
+import { Form } from '@/components/ui/form';
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,

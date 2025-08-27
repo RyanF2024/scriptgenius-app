@@ -7,27 +7,66 @@ import { withSubscriptionMiddleware } from './middleware/subscription';
 const protectedRoutes = ['/dashboard', '/account', '/billing'] as const;
 const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/pricing'] as const;
 
-// Type for cookie options
-type CookieOptionsType = {
-  name: string;
-  value: string;
-  options: CookieOptions;
+// Environment variables with type safety
+const SUPABASE_URL = process.env['NEXT_PUBLIC_SUPABASE_URL'];
+const SUPABASE_ANON_KEY = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('Missing required environment variables for Supabase');
+}
+
+// Cookie configuration
+const COOKIE_OPTIONS = {
+  name: 'sb-auth-token',
+  lifetime: 60 * 60 * 24 * 7, // 7 days
+  domain: '',
+  path: '/',
+  sameSite: 'lax' as const,
 };
+
+// Cache for public routes
+const PUBLIC_ROUTES = new Set([
+  '/',
+  '/auth/signin',
+  '/auth/signup',
+  '/auth/reset-password',
+  '/pricing',
+  '/blog',
+  '/docs',
+]);
+
+// Cache for auth routes that don't require authentication
+const AUTH_ROUTES = new Set([
+  '/auth/signin',
+  '/auth/signup',
+  '/auth/reset-password',
+]);
+
+// Cache for protected routes that require authentication
+const PROTECTED_ROUTES = new Set([
+  '/dashboard',
+  '/account',
+  '/billing',  
+  '/api/me'
+]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Skip middleware for static files, API routes, and auth callback
-  const shouldSkip = [
-    pathname.startsWith('/_next'),
-    pathname.startsWith('/static'),
-    pathname.includes('.'),
-    pathname.startsWith('/auth/callback'),
-    pathname === '/',
-    pathname.startsWith('/api/webhooks'), // Skip webhook endpoints
-  ].some(Boolean);
-
-  if (shouldSkip) {
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.') ||
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/auth/callback') ||
+    pathname === '/favicon.ico'
+  ) {
+    return NextResponse.next();
+  }
+  
+  // Check if route is public
+  if (PUBLIC_ROUTES.has(pathname)) {
     return NextResponse.next();
   }
 

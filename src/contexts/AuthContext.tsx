@@ -183,34 +183,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'SET_LOADING', payload: false });
   }, []);
 
-  const value = useMemo(
-    () => ({
-      user: state.user,
-      session: state.session,
-      isLoading: state.isLoading,
-      error: state.error,
-      signIn,
-      signUp,
-      signOut,
-      signInWithOAuth,
-      sendPasswordResetEmail,
-      updatePassword,
-      refreshSession,
-    }),
-    [
-      state.user,
-      state.session,
-      state.isLoading,
-      state.error,
-      signIn,
-      signUp,
-      signOut,
-      signInWithOAuth,
-      sendPasswordResetEmail,
-      updatePassword,
-      refreshSession,
-    ]
-  );
+  // Memoize the auth state to prevent unnecessary re-renders
+  const { user, session, isLoading, error } = state;
+  
+  // Memoize the value object with stable references
+  const value = useMemo(() => ({
+    user,
+    session,
+    isLoading,
+    error,
+    signIn,
+    signUp,
+    signOut,
+    signInWithOAuth,
+    sendPasswordResetEmail,
+    updatePassword,
+    refreshSession,
+  }), [
+    user,
+    session,
+    isLoading,
+    error,
+    signIn,
+    signUp,
+    signOut,
+    signInWithOAuth,
+    sendPasswordResetEmail,
+    updatePassword,
+    refreshSession,
+  ]);
 
   return (
     <AuthContext.Provider value={value}>

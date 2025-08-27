@@ -1,176 +1,155 @@
-import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot } from "@radix-ui/react-slot"
-import {
-  Controller,
-  ControllerProps,
-  FieldPath,
-  FieldValues,
-  FormProvider,
-  useFormContext,
-} from "react-hook-form"
+'use client';
 
-import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
+import * as React from 'react';
+import dynamic from 'next/dynamic';
+import { 
+  Controller, 
+  FormProvider as RHFProvider, 
+  useFormContext as useRHFContext,
+  type UseFormReturn,
+  type FieldValues,
+  type Path,
+  type FieldPath,
+  type FieldPathValue,
+} from 'react-hook-form';
+import { cn } from '@/lib/utils';
+import { useOptimizedForm } from '@/hooks/useOptimizedForm';
 
-const Form = FormProvider
+// Lazy load heavy form components
+const DynamicLabel = dynamic(() => import('@/components/ui/label'), {
+  loading: () => <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />,
+  ssr: false,
+});
 
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
-> = {
-  name: TName
-}
+// Memoized form field context
+const FormFieldContext = React.createContext<{ name: string } | null>(null);
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-)
-
-const FormField = <
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
-  return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
-    </FormFieldContext.Provider>
-  )
-}
-
-const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext)
-  const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
-
-  const fieldState = getFieldState(fieldContext.name, formState)
-
-  if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>")
+// Memoized form field component
+const FormField = React.memo(
+  ({ name, render, ...props }: any) => {
+    const contextValue = React.useMemo(() => ({ name }), [name]);
+    
+    return (
+      <FormFieldContext.Provider value={contextValue}>
+        <Controller
+          name={name}
+          render={(fieldProps) => (
+            <div className="space-y-2">
+              {render({ field: fieldProps.field, fieldState: fieldProps.fieldState })}
+            </div>
+          )}
+          {...props}
+        />
+      </FormFieldContext.Provider>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if name or control changes
+    return prevProps.name === nextProps.name && 
+           prevProps.control === nextProps.control;
   }
+);
+FormField.displayName = 'FormField';
 
-  const { id } = itemContext
-
-  return {
-    id,
-    name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
-    ...fieldState,
-  }
-}
-
-type FormItemContextValue = {
-  id: string
-}
-
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-)
-
-const FormItem = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const id = React.useId()
-
+// Memoized form item component
+const FormItem = React.memo(({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+  const id = React.useId();
+  const contextValue = React.useMemo(() => ({ id }), [id]);
+  
   return (
-    <FormItemContext.Provider value={{ id }}>
-      <div ref={ref} className={cn("space-y-2", className)} {...props} />
-    </FormItemContext.Provider>
-  )
-})
-FormItem.displayName = "FormItem"
+    <div className={cn('space-y-2', className)} {...props} />
+  );
+});
+FormItem.displayName = 'FormItem';
 
-const FormLabel = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField()
-
+// Memoized form label component
+const FormLabel = React.memo(({ className, ...props }: any) => {
   return (
-    <Label
-      ref={ref}
-      className={cn(error && "text-destructive", className)}
-      htmlFor={formItemId}
+    <DynamicLabel
+      className={cn(className)}
       {...props}
     />
-  )
-})
-FormLabel.displayName = "FormLabel"
+  );
+});
+FormLabel.displayName = 'FormLabel';
 
-const FormControl = React.forwardRef<
-  React.ElementRef<typeof Slot>,
-  React.ComponentPropsWithoutRef<typeof Slot>
->(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+// Memoized form control component
+const FormControl = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn('relative', className)}
+        {...props}
+      />
+    );
+  }
+);
+FormControl.displayName = 'FormControl';
 
-  return (
-    <Slot
-      ref={ref}
-      id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-invalid={!!error}
-      {...props}
-    />
-  )
-})
-FormControl.displayName = "FormControl"
-
-const FormDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => {
-  const { formDescriptionId } = useFormField()
-
+// Memoized form description component
+const FormDescription = React.memo(({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => {
   return (
     <p
-      ref={ref}
-      id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn('text-sm text-muted-foreground', className)}
       {...props}
     />
-  )
-})
-FormDescription.displayName = "FormDescription"
+  );
+});
+FormDescription.displayName = 'FormDescription';
 
-const FormMessage = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message) : children
-
-  if (!body) {
-    return null
-  }
-
-  return (
+// Memoized form message component
+const FormMessage = React.memo(({ className, children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => {
+  return children ? (
     <p
-      ref={ref}
-      id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
+      className={cn('text-sm font-medium text-destructive', className)}
       {...props}
     >
-      {body}
+      {children}
     </p>
-  )
-})
-FormMessage.displayName = "FormMessage"
+  ) : null;
+});
+FormMessage.displayName = 'FormMessage';
 
+// Memoized Form component to prevent unnecessary re-renders
+const Form = React.memo(({
+  children,
+  className,
+  ...props
+}: {
+  children: React.ReactNode;
+  className?: string;
+} & React.ComponentProps<typeof RHFProvider>) => {
+  return (
+    <RHFProvider {...props}>
+      <form className={cn('space-y-6', className)}>
+        {children}
+      </form>
+    </RHFProvider>
+  );
+});
+Form.displayName = 'Form';
+
+// Enhanced useForm hook
+export function useForm<T extends FieldValues>(
+  ...args: Parameters<typeof useOptimizedForm<T>>
+) {
+  return useOptimizedForm<T>(...args);
+}
+
+// Re-export types for better DX
+export type { UseFormReturn, FieldValues, FieldPath, FieldPathValue };
+
+// Export optimized components
 export {
-  useFormField,
   Form,
+  FormField,
   FormItem,
   FormLabel,
   FormControl,
   FormDescription,
   FormMessage,
-  FormField,
-}
+  useRHFContext as useFormContext,
+};
+
+export default Form;

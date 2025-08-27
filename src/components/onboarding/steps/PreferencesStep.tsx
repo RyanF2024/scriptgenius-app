@@ -6,8 +6,8 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { GENRES, EXPERIENCE_LEVELS } from '@/lib/constants';
 import { preferencesSchema, type PreferencesInput } from '@/lib/validations/onboarding';
+import { Form } from '@/components/ui/form';
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,

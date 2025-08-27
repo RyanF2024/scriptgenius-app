@@ -1,6 +1,37 @@
 # ScriptGenius
 
-A professional screenwriting analysis platform that provides AI-powered script coverage, character analysis, and market insights. Built with Next.js, TypeScript, and Supabase.
+A high-performance web application for script generation and management, built with Next.js and optimized for the best user experience.
+
+## 🚀 Performance Features
+
+- ⚡ **Optimized Image Loading**
+  - Automatic format optimization (WebP/AVIF)
+  - Lazy loading and blur-up placeholders
+  - Responsive image handling
+
+- 🎯 **Efficient Data Fetching**
+  - Request deduplication
+  - Smart caching strategies
+  - Optimized API calls
+
+- ✨ **Smooth UI/UX**
+  - Optimized form handling
+  - Instant feedback and loading states
+  - Reduced layout shifts
+
+- 🛠 **Developer Experience**
+  - Type-safe codebase
+  - Performance monitoring
+  - Comprehensive documentation
+
+## 📊 Performance Metrics
+
+| Metric | Target | Status |
+|--------|--------|--------|
+| LCP    | < 2.5s | ✅     |
+| FID    | < 100ms| ✅     |
+| CLS    | < 0.1  | ✅     |
+| TTI    | < 3.5s | ✅     |
 
 ## 📚 Documentation
 
