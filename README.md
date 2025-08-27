@@ -85,7 +85,7 @@ A high-performance web application for script generation and management, built w
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/scriptgenius.git
+   git clone https://github.com/RyanF2024/scriptgenius.app
    cd scriptgenius
    ```
 
