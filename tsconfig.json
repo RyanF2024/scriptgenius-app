@@ -9,6 +9,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "types": ["jest", "node", "@testing-library/jest-dom"],
     
     // Strict Type-Checking
     "strict": true,

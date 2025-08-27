@@ -1,48 +1,35 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { User, UserRole } from '@prisma/client';
 import { z } from 'zod';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Icons } from '@/components/icons';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Form } from '@/components/ui/form';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Switch } from '@/components/ui/switch';
+import { EnhancedForm, FormField } from '@/components/ui/form/EnhancedForm';
+import { FormLayout, FormSection, FormActions } from '@/components/ui/form/FormLayout';
 
-// Define form schema
+// Define form schema with enhanced validations
 const userFormSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  role: z.nativeEnum(UserRole),
-  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']),
-  password: z.string().optional(),
-  confirmPassword: z.string().optional(),
+  name: z.string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name must be less than 100 characters'),
+  email: z.string()
+    .email('Please enter a valid email address')
+    .min(1, 'Email is required'),
+  role: z.nativeEnum(UserRole, {
+    required_error: 'Please select a role',
+  }),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED'], {
+    required_error: 'Please select a status',
+  }),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .optional()
+    .or(z.literal('')),
+  confirmPassword: z.string()
+    .optional()
+    .or(z.literal('')),
 }).refine(
-  (data) => {
-    if (data.password || data.confirmPassword) {
-      return data.password === data.confirmPassword;
-    }
-    return true;
-  },
+  (data) => !(data.password || data.confirmPassword) || data.password === data.confirmPassword,
   {
     message: "Passwords don't match",
     path: ['confirmPassword'],
@@ -59,209 +46,119 @@ interface UserFormProps {
 
 export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPasswordFields, setShowPasswordFields] = useState(!user?.id);
 
-  const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
-    defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      role: user?.role || 'USER',
-      status: (user?.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') || 'ACTIVE',
-      password: '',
-      confirmPassword: '',
-    },
-  });
-
-  const onSubmit = async (data: UserFormValues) => {
+  const handleSubmit = async (data: UserFormValues) => {
     try {
-      setIsLoading(true);
-      
-      // Remove confirmPassword before sending to API
-      const { confirmPassword, ...userData } = data;
-      if (!userData.password) {
-        delete userData.password;
-      }
-
-      // TODO: Implement API call to create/update user
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       
       toast({
-        title: user?.id ? 'User updated' : 'User created',
-        description: user?.id 
-          ? 'User information has been updated.'
-          : 'A new user has been created.',
+        title: 'Success',
+        description: user?.id ? 'User updated successfully' : 'User created successfully',
       });
       
       onSuccess?.();
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to save user. Please try again.',
+        description: 'An error occurred. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      throw error; // Let the form handle the error
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <EnhancedForm
+      schema={userFormSchema}
+      onSubmit={handleSubmit}
+      defaultValues={{
+        name: user?.name || '',
+        email: user?.email || '',
+        role: (user?.role as UserRole) || UserRole.USER,
+        status: (user?.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') || 'ACTIVE',
+        password: '',
+        confirmPassword: '',
+      }}
+      submitText={user?.id ? 'Update User' : 'Create User'}
+      showReset={false}
+    >
+      <FormLayout>
+        <FormSection>
           <FormField
-            control={form.control}
             name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Full Name"
+            type="text"
+            placeholder="John Doe"
+            required
           />
-          
+
           <FormField
-            control={form.control}
             name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="john@example.com" 
-                    type="email" 
-                    disabled={!!user?.id}
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Email"
+            type="email"
+            placeholder="john@example.com"
+            required
+            disabled={!!user?.id}
           />
 
           <FormField
-            control={form.control}
             name="role"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Role</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ADMIN">Administrator</SelectItem>
-                    <SelectItem value="EDITOR">Editor</SelectItem>
-                    <SelectItem value="USER">User</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Role"
+            type="select"
+            options={Object.values(UserRole).map((role) => ({
+              value: role,
+              label: role.charAt(0) + role.slice(1).toLowerCase(),
+            }))}
+            required
           />
 
           <FormField
-            control={form.control}
             name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Status"
+            type="select"
+            options={[
+              { value: 'ACTIVE', label: 'Active' },
+              { value: 'INACTIVE', label: 'Inactive' },
+              { value: 'SUSPENDED', label: 'Suspended' },
+            ]}
+            required
           />
 
-          {!user?.id || showPasswordFields ? (
+          {!user?.id && (
             <>
               <FormField
-                control={form.control}
                 name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="••••••••" 
-                        autoComplete="new-password"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Password"
+                type="password"
+                placeholder="••••••••"
+                description="At least 8 characters, including letters and numbers"
+                required
               />
-              
+
               <FormField
-                control={form.control}
                 name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="••••••••" 
-                        autoComplete="new-password"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Confirm Password"
+                type="password"
+                placeholder="••••••••"
+                required
               />
             </>
-          ) : (
-            <div className="md:col-span-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPasswordFields(true)}
-              >
-                Change Password
-              </Button>
-            </div>
           )}
-        </div>
+        </FormSection>
 
-        <div className="flex justify-end space-x-4">
+        <FormActions>
           {onCancel && (
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
-              disabled={isLoading}
             >
               Cancel
             </Button>
           )}
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && (
-              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            {user?.id ? 'Update User' : 'Create User'}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        </FormActions>
+      </FormLayout>
+    </EnhancedForm>
   );
 }
