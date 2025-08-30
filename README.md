@@ -62,11 +62,15 @@ A high-performance web application for script generation and management, built w
 
 ## 📚 Documentation
 
-- [Master Checklist](../MASTER_CHECKLIST.md) - Single source of truth for all project requirements and features
-- [Changelog](../CHANGELOG.md) - Track all notable changes to the project
-- [AI Integration](README-AI-INTEGRATION.md) - Comprehensive guide to AI features and implementation
-- [API Documentation](/docs/API.md) - Detailed API reference (coming soon)
-- [User Guide](/docs/USER_GUIDE.md) - Getting started and feature guides (coming soon)
+For comprehensive documentation, please visit our [Documentation Hub](https://github.com/RyanF2024/scriptgenius-app/tree/main/docs).
+
+### Quick Links
+
+- [Master Checklist](https://github.com/RyanF2024/scriptgenius-app/blob/main/MASTER_CHECKLIST.md) - Single source of truth for all project requirements and features
+- [Changelog](https://github.com/RyanF2024/scriptgenius-app/blob/main/CHANGELOG.md) - Track all notable changes to the project
+- [User Guide](https://github.com/RyanF2024/scriptgenius-app/blob/main/docs/USER-GUIDE.md) - Getting started and feature guides
+- [API Reference](https://github.com/RyanF2024/scriptgenius-app/blob/main/docs/API.md) - Complete API documentation
+- [AI Integration](https://github.com/RyanF2024/scriptgenius-app/blob/main/docs/AI-INTEGRATION.md) - Comprehensive guide to AI features and implementation
 
 ## 🏗 Project Structure
 

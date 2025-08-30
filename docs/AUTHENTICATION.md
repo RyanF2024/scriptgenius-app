@@ -1,15 +1,123 @@
-# Authentication and Toast System
+# Authentication and Security
 
 ## Table of Contents
-- [Toast System](#toast-system)
-  - [Usage](#toast-usage)
-  - [API Reference](#toast-api)
-  - [Customization](#toast-customization)
 - [Authentication](#authentication)
   - [Auth Context](#auth-context)
   - [Common Patterns](#common-patterns)
   - [Error Handling](#error-handling)
   - [Protected Routes](#protected-routes)
+- [Multi-Factor Authentication (MFA)](#multi-factor-authentication)
+  - [MFA Setup](#mfa-setup)
+  - [MFA Verification](#mfa-verification)
+  - [Backup Codes](#backup-codes)
+  - [MFA Management](#mfa-management)
+- [Account Security](#account-security)
+  - [Password Management](#password-management)
+  - [Session Management](#session-management)
+  - [Account Recovery](#account-recovery)
+- [Toast System](#toast-system)
+  - [Usage](#toast-usage)
+  - [API Reference](#toast-api)
+
+## Multi-Factor Authentication (MFA)
+
+MFA adds an extra layer of security to user accounts by requiring a second form of verification in addition to the password.
+
+### MFA Setup
+
+To enable MFA for a user account:
+
+```tsx
+import { useMFA } from '@/contexts/MFAContext';
+
+function MFASetupComponent() {
+  const { start2FASetup, verify2FASetup, confirm2FASetup } = useMFA();
+  const [qrCodeData, setQrCodeData] = useState({ secret: '', qrCodeUrl: '' });
+  const [verificationCode, setVerificationCode] = useState('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+
+  const handleStartSetup = async () => {
+    const data = await start2FASetup();
+    setQrCodeData(data);
+  };
+
+  const handleVerify = async () => {
+    const success = await verify2FASetup(verificationCode);
+    if (success) {
+      // Show backup codes to user
+      setBackupCodes(backupCodes);
+    }
+  };
+
+  const handleConfirm = () => {
+    confirm2FASetup(backupCodes);
+  };
+
+  // Render QR code and verification UI
+}
+```
+
+### MFA Verification
+
+During login, verify MFA codes:
+
+```tsx
+const { verify2FACode } = useMFA();
+
+// During login flow
+const isValid = await verify2FACode(userId, { code, factorId: 'totp' });
+```
+
+### Backup Codes
+
+Generate and manage backup codes:
+
+```tsx
+const { generateNewBackupCodes } = useMFA();
+
+const handleRegenerateCodes = async () => {
+  const newCodes = await generateNewBackupCodes(userId);
+  // Show new codes to user
+};
+```
+
+### MFA Management
+
+Disable MFA when needed:
+
+```tsx
+const { disable2FA } = useMFA();
+
+const handleDisableMFA = async (password: string) => {
+  const success = await disable2FA(password);
+  if (success) {
+    // MFA disabled
+  }
+};
+```
+
+## Account Security
+
+### Password Management
+
+- Password strength requirements
+- Password reset flow
+- Password change flow
+- Password history
+
+### Session Management
+
+- Active sessions tracking
+- Session timeout
+- Remote sign-out
+- Device management
+
+### Account Recovery
+
+- Recovery email verification
+- Security questions
+- Account lockout after failed attempts
+- Suspicious activity alerts
 
 ## Toast System
 
