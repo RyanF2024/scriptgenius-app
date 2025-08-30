@@ -2,15 +2,18 @@
 
 import { createContext, useContext, useEffect, useReducer, useCallback, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import type { Profile } from '@/services/auth/auth.types';
+import type { Profile, ProfileUpdate } from '@/types/profile';
 import { authService } from '@/services/auth/auth.service';
 import { useAuth } from './AuthContext';
 
-type UserProfileState = {
+interface UserProfileState {
   profile: Profile | null;
   isLoading: boolean;
   error: Error | null;
-};
+  updateProfile?: (updates: ProfileUpdate) => Promise<Profile | undefined>;
+  deleteProfilePicture?: () => Promise<void>;
+  refreshProfile?: () => Promise<void>;
+}
 
 type UserProfileAction =
   | { type: 'SET_PROFILE_LOADING'; payload: boolean }
@@ -36,7 +39,7 @@ const initialState: UserProfileState = {
   error: null,
 };
 
-const UserProfileContext = createContext<UserProfileState | undefined>(undefined);
+const UserProfileContext = createContext<Required<UserProfileState> | undefined>(undefined);
 
 export function UserProfileProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(userProfileReducer, initialState);
@@ -87,7 +90,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     ...state,
-    updateProfile: async (updates: Partial<Profile>) => {
+    updateProfile: async (updates: ProfileUpdate) => {
       if (!user?.id) return;
       
       try {
@@ -97,11 +100,35 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
         if (error) throw error;
         
         dispatch({ type: 'SET_PROFILE', payload: data });
+        return data;
       } catch (err) {
         console.error('Error updating profile:', err);
         dispatch({ 
           type: 'SET_PROFILE_ERROR', 
           payload: err instanceof Error ? err : new Error('Failed to update profile') 
+        });
+        throw err;
+      } finally {
+        dispatch({ type: 'SET_PROFILE_LOADING', payload: false });
+      }
+    },
+
+    deleteProfilePicture: async () => {
+      if (!user?.id || !state.profile?.avatar_path) return;
+      
+      try {
+        dispatch({ type: 'SET_PROFILE_LOADING', payload: true });
+        const { error } = await authService.deleteProfilePicture(user.id, state.profile.avatar_path);
+        
+        if (error) throw error;
+        
+        // Refresh the profile to get the updated data
+        await fetchProfile(user.id);
+      } catch (err) {
+        console.error('Error deleting profile picture:', err);
+        dispatch({ 
+          type: 'SET_PROFILE_ERROR', 
+          payload: err instanceof Error ? err : new Error('Failed to delete profile picture') 
         });
         throw err;
       } finally {

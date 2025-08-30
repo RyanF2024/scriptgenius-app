@@ -1,15 +1,28 @@
-# AuthContext
+# Authentication & Security
 
-A comprehensive authentication context for managing user sessions, authentication state, and protected routes in Next.js applications.
+A comprehensive authentication and security system for Next.js applications, including multi-factor authentication (MFA) and account security features.
 
 ## Features
 
+### Core Authentication
 - **Session Management** - Automatic token refresh and session persistence
-- **Authentication Methods** - Email/password, OAuth, magic links
+- **Multiple Auth Methods** - Email/password, OAuth, magic links
 - **Protected Routes** - HOC for route protection
 - **Error Handling** - Graceful error boundaries and error states
 - **Loading States** - Per-operation loading indicators
 - **Type Safety** - Full TypeScript support
+
+### Multi-Factor Authentication (MFA)
+- **TOTP Support** - Time-based one-time passwords via authenticator apps
+- **Backup Codes** - One-time use codes for account recovery
+- **MFA Management** - Enable/disable MFA, regenerate backup codes
+- **Multiple Factors** - Support for multiple verification methods
+
+### Account Security
+- **Password Management** - Secure password policies and reset flows
+- **Session Management** - View and manage active sessions
+- **Security Events** - Log and monitor security-related activities
+- **Account Recovery** - Secure account recovery options
 
 ## Installation
 
