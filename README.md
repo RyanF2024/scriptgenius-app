@@ -1,6 +1,33 @@
 # ScriptGenius
 
-A high-performance web application for script generation and management, built with Next.js and optimized for the best user experience.
+A high-performance web application for script generation and management, built with Next.js, TypeScript, and optimized for the best user experience. The application provides AI-powered script analysis, multi-format support, and comprehensive reporting tools.
+
+## 🚀 Key Features
+
+- **AI-Powered Analysis**
+  - Multiple AI providers (OpenAI, Anthropic, Google AI)
+  - Custom analysis personas (executive, writer, coach)
+  - Adjustable tone settings
+
+- **Comprehensive Reporting**
+  - PDF report generation
+  - Multiple analysis perspectives
+  - Exportable results
+
+- **User Experience**
+  - Responsive design
+  - Intuitive interface
+  - Real-time feedback
+
+## 🛠 Technical Stack
+
+- **Frontend**: Next.js, React, TypeScript
+- **Styling**: Tailwind CSS, CSS Modules
+- **State Management**: React Query, Context API
+- **Backend**: Next.js API Routes
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Deployment**: Vercel
 
 ## 🚀 Performance Features
 
@@ -35,10 +62,40 @@ A high-performance web application for script generation and management, built w
 
 ## 📚 Documentation
 
-- [Master Checklist](MASTER_CHECKLIST.md) - Single source of truth for all project requirements and features
-- [Changelog](CHANGELOG.md) - Track all notable changes to the project
+- [Master Checklist](../MASTER_CHECKLIST.md) - Single source of truth for all project requirements and features
+- [Changelog](../CHANGELOG.md) - Track all notable changes to the project
+- [AI Integration](README-AI-INTEGRATION.md) - Comprehensive guide to AI features and implementation
 - [API Documentation](/docs/API.md) - Detailed API reference (coming soon)
 - [User Guide](/docs/USER_GUIDE.md) - Getting started and feature guides (coming soon)
+
+## 🏗 Project Structure
+
+```
+scriptgenius/
+├── src/
+│   ├── app/                 # Next.js 13+ app directory
+│   ├── components/          # Reusable UI components
+│   │   ├── ui/             # Shadcn/ui components
+│   │   ├── forms/          # Form components and validation
+│   │   └── features/       # Feature-specific components
+│   ├── lib/                # Utility functions and configurations
+│   │   ├── ai/            # AI service implementations
+│   │   ├── api/           # API client and services
+│   │   └── utils/         # Helper functions
+│   ├── types/              # TypeScript type definitions
+│   ├── styles/             # Global styles and themes
+│   └── tests/              # Test files
+├── public/                 # Static assets
+└── supabase/              # Database migrations and configurations
+```
+
+## 🚀 Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables (see `.env.example`)
+4. Run the development server: `npm run dev`
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## 🚀 Features
 
