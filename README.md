@@ -142,7 +142,7 @@ scriptgenius/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/RyanF2024/scriptgenius.app
+   git clone https://github.com/RyanF2024/scriptgenius-app
    cd scriptgenius
    ```
 
