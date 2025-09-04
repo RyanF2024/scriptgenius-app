@@ -59,27 +59,66 @@ function MFASetupComponent() {
 
 ### MFA Verification
 
-During login, verify MFA codes:
+#### Setup Verification
+During MFA setup, verify the TOTP code:
 
 ```tsx
-const { verify2FACode } = useMFA();
+const { verify2FASetup } = useMFA();
 
-// During login flow
-const isValid = await verify2FACode(userId, { code, factorId: 'totp' });
+const handleVerifyCode = async (code: string) => {
+  try {
+    const isValid = await verify2FASetup(code);
+    if (isValid) {
+      // Proceed with MFA setup completion
+    }
+  } catch (error) {
+    console.error('Verification failed:', error);
+  }
+};
+```
+
+#### Backup Code Verification
+Verify backup codes during MFA login:
+
+```tsx
+const { verifyBackupCode } = useMFA();
+
+const handleVerifyBackupCode = async (code: string) => {
+  try {
+    const isValid = await verifyBackupCode(code);
+    if (isValid) {
+      // Code is valid, proceed with login
+    }
+  } catch (error) {
+    console.error('Invalid backup code');
+  }
+};
 ```
 
 ### Backup Codes
 
-Generate and manage backup codes:
+#### Generating New Backup Codes
+Backup codes are generated in a secure 12-character format (XXXX-XXXX-XXXX) and should be stored safely:
 
 ```tsx
 const { generateNewBackupCodes } = useMFA();
 
 const handleRegenerateCodes = async () => {
-  const newCodes = await generateNewBackupCodes(userId);
-  // Show new codes to user
+  try {
+    const newCodes = await generateNewBackupCodes();
+    // Display new codes to user (only once!)
+    // Each code can only be used once
+  } catch (error) {
+    console.error('Failed to generate backup codes:', error);
+  }
 };
 ```
+
+#### Security Notes
+- Backup codes are hashed using bcrypt before storage
+- Each code can only be used once
+- Generating new codes invalidates all previous codes
+- Codes are displayed only once for security
 
 ### MFA Management
 

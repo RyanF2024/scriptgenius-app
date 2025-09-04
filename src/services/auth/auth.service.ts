@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 const AVATAR_BUCKET = 'avatars';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
 type AuthResponse = {
   data: {
@@ -71,7 +72,18 @@ export const authService = {
     return { error };
   },
 
-  async updatePassword(newPassword: string): Promise<{ error: AuthError | null }> {
+  async updatePassword(currentPassword: string, newPassword: string): Promise<{ error: AuthError | null }> {
+    // First verify the current password by signing in
+    const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
+      email: (await supabase.auth.getUser()).data.user?.email || '',
+      password: currentPassword,
+    });
+
+    if (signInError || !user) {
+      return { error: signInError || new Error('Current password is incorrect') };
+    }
+
+    // If current password is correct, update to the new password
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
@@ -109,13 +121,19 @@ export const authService = {
           throw new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.');
         }
         
+        // Validate file extension
+        const originalFileName = file.name.toLowerCase();
+        const fileExt = originalFileName.split('.').pop();
+        
+        if (!fileExt || !ALLOWED_EXTENSIONS.includes(fileExt)) {
+          throw new Error('Invalid file extension. Only .jpg, .jpeg, .png, and .webp files are allowed.');
+        }
+        
         if (file.size > MAX_FILE_SIZE) {
           throw new Error(`File size exceeds the maximum limit of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
         }
 
-// Generate unique file path
-        const originalFileName = file.name;
-        const fileExt = originalFileName.split('.').pop();
+        // Generate unique file path with validated extension
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
 

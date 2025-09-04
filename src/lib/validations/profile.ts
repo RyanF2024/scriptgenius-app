@@ -5,7 +5,8 @@ export const profileSchema = z.object({
     .string()
     .min(2, { message: 'Name must be at least 2 characters.' })
     .max(100, { message: 'Name must be less than 100 characters.' })
-    .optional(),
+    .optional()
+    .or(z.literal('')),
   username: z
     .string()
     .min(3, { message: 'Username must be at least 3 characters.' })
@@ -15,11 +16,10 @@ export const profileSchema = z.object({
     })
     .optional()
     .or(z.literal('')),
-  website: z
-    .string()
-    .url({ message: 'Please enter a valid URL.' })
-    .optional()
-    .or(z.literal('')),
+  website: z.union([
+    z.string().url({ message: 'Please enter a valid URL.' }),
+    z.literal('').optional()
+  ]),
   bio: z
     .string()
     .max(500, { message: 'Bio must be less than 500 characters.' })

@@ -43,6 +43,7 @@ export default function ProfilePage() {
   });
 
   // Update form when profile data loads
+  // Update form values and preview URL when profile data is loaded
   useEffect(() => {
     if (profile) {
       form.reset({
@@ -54,18 +55,6 @@ export default function ProfilePage() {
       if (profile.avatar_url) {
         setPreviewUrl(profile.avatar_url);
       }
-    }
-  }, [profile, form]);
-
-  // Update form values when profile data is loaded
-  React.useEffect(() => {
-    if (profile) {
-      form.reset({
-        full_name: profile.full_name || '',
-        username: profile.username || '',
-        website: profile.website || '',
-        bio: profile.bio || '',
-      });
     }
   }, [profile, form]);
 

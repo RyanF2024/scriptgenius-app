@@ -1,8 +1,37 @@
 import { supabase } from '@/lib/supabase/client';
-import { MfaSetupResponse, MfaVerifyRequest, MfaDisableRequest, MfaBackupCodeVerifyRequest, MfaStatus, MfaError, MfaMethod } from '@/types/mfa';
+import type { MfaBackupCodeVerifyRequest } from '@/types/mfa';
 import * as OTPAuth from 'otpauth';
 import { randomBytes } from 'crypto';
 import { Buffer } from 'buffer';
+import { compareSync } from 'bcryptjs';
+import { encrypt, decrypt, ensureDecrypted } from '@/lib/security/encryption';
+
+interface BackupCode {
+  id: string;
+  code_hash: string;
+  is_used: boolean;
+  user_id: string;
+  created_at: string;
+  used_at: string | null;
+}
+
+// Rate limiting configuration
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MINUTES = 15;
+
+// Configuration
+const MFA_CONFIG = {
+  backupCodes: {
+    count: 8, // Number of backup codes to generate
+    length: 10, // Length of each backup code
+  },
+  totp: {
+    issuer: 'ScriptGenius',
+    algorithm: 'SHA1',
+    digits: 6,
+    period: 30,
+  },
+};
 import { AuthError } from '@supabase/supabase-js';
 
 const TOTP_ISSUER = 'ScriptGenius';
@@ -33,10 +62,10 @@ export const mfaService = {
       // Generate QR code URL
       const qrCodeUrl = totp.toString();
 
-      // Generate backup codes
+      // Generate backup codes using configured count
       const { data: backupCodes, error: codesError } = await supabase.rpc('generate_backup_codes', {
         user_uuid: userId,
-        code_count: 8
+        code_count: MFA_CONFIG.backupCodes.count
       });
 
       if (codesError) {
@@ -44,12 +73,15 @@ export const mfaService = {
         throw new Error('Failed to generate backup codes');
       }
 
-      // Store the secret in a temporary session for verification
+      // Encrypt the secret before storing
+      const encryptedSecret = encrypt(secret);
+
+      // Store the encrypted secret temporarily until verified
       const { error: sessionError } = await supabase
         .from('mfa_temp_secrets')
         .upsert({
           user_id: userId,
-          secret,
+          secret: encryptedSecret,
           expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes expiry
         }, { onConflict: 'user_id' });
 
@@ -82,6 +114,9 @@ export const mfaService = {
       if (fetchError || !tempSecret) {
         throw new Error('2FA setup session expired or not found. Please start the setup process again.');
       }
+      
+      // Decrypt the secret if it's encrypted
+      const secret = ensureDecrypted(tempSecret.secret);
 
       // Verify the TOTP code
       const totp = new OTPAuth.TOTP({
@@ -89,7 +124,7 @@ export const mfaService = {
         algorithm: TOTP_ALGORITHM,
         digits: TOTP_DIGITS,
         period: TOTP_PERIOD,
-        secret: OTPAuth.Secret.fromBase32(tempSecret.secret)
+        secret: OTPAuth.Secret.fromBase32(secret)
       });
 
       const isValid = totp.validate({ token: request.code, window: 1 }) !== null;
@@ -98,13 +133,16 @@ export const mfaService = {
         return { success: false };
       }
 
-      // Store the verified secret in the user's profile
+      // Encrypt the secret before storing
+      const encryptedSecret = encrypt(secret);
+      
+      // Store the encrypted secret in the user's security preferences
       const { error: updateError } = await supabase
         .from('user_security_preferences')
         .upsert({
           user_id: userId,
           mfa_enabled: true,
-          mfa_secret: tempSecret.secret,
+          mfa_secret: encryptedSecret,
           mfa_method: 'totp',
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
@@ -165,7 +203,7 @@ export const mfaService = {
           .from('user_security_preferences')
           .upsert({
             user_id: userId,
-            is_mfa_enabled: true,
+            mfa_enabled: true,
             mfa_method: 'totp',
             updated_at: new Date().toISOString()
           }, {
@@ -180,21 +218,82 @@ export const mfaService = {
     }
   },
 
-  // Disable 2FA for a user
-  async disable2FA(userId: string, request: MfaDisableRequest): Promise<{ success: boolean }> {
-    try {
-      // Verify the user's password first
-      const { error: authError } = await supabase.rpc('verify_user_password', {
-        user_uuid: userId,
-        password: request.password
-      });
+  // Track failed attempts in memory (in production, consider using Redis)
+const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
 
-      if (authError) {
-        if ((authError as any).code === '400') {
-          throw new Error('Incorrect password. Please try again.');
-        }
-        throw authError;
+// Check if the user is currently locked out
+function isUserLockedOut(userId: string): { locked: boolean; remainingTime?: number } {
+  const userAttempts = failedAttempts.get(userId);
+  if (!userAttempts) return { locked: false };
+
+  const lockoutDurationMs = LOCKOUT_DURATION_MINUTES * 60 * 1000;
+  const timeSinceLastAttempt = Date.now() - userAttempts.lastAttempt;
+  
+  if (userAttempts.count >= MAX_FAILED_ATTEMPTS && timeSinceLastAttempt < lockoutDurationMs) {
+    const remainingTime = Math.ceil((lockoutDurationMs - timeSinceLastAttempt) / 60000); // in minutes
+    return { locked: true, remainingTime };
+  }
+  
+  // Reset counter if the lockout period has passed
+  if (timeSinceLastAttempt >= lockoutDurationMs) {
+    failedAttempts.delete(userId);
+    return { locked: false };
+  }
+  
+  return { locked: false };
+}
+
+// Track a failed attempt
+function trackFailedAttempt(userId: string): { locked: boolean; remainingAttempts: number; remainingTime?: number } {
+  const userAttempts = failedAttempts.get(userId) || { count: 0, lastAttempt: 0 };
+  const now = Date.now();
+  
+  // Reset counter if last attempt was before the lockout period
+  if (now - userAttempts.lastAttempt >= LOCKOUT_DURATION_MINUTES * 60 * 1000) {
+    userAttempts.count = 0;
+  }
+  
+  userAttempts.count++;
+  userAttempts.lastAttempt = now;
+  failedAttempts.set(userId, userAttempts);
+  
+  const remainingAttempts = Math.max(0, MAX_FAILED_ATTEMPTS - userAttempts.count);
+  
+  return {
+    locked: userAttempts.count >= MAX_FAILED_ATTEMPTS,
+    remainingAttempts,
+    remainingTime: LOCKOUT_DURATION_MINUTES
+  };
+}
+
+// Disable 2FA for a user
+async disable2FA(userId: string, request: MfaDisableRequest): Promise<{ success: boolean }> {
+  try {
+    // Check if user is locked out
+    const lockoutStatus = isUserLockedOut(userId);
+    if (lockoutStatus.locked) {
+      throw new Error(`Too many failed attempts. Please try again in ${lockoutStatus.remainingTime} minutes.`);
+    }
+
+    // Verify the user's password first
+    const { error: authError } = await supabase.rpc('verify_user_password', {
+      user_uuid: userId,
+      password: request.password
+    });
+
+    if (authError) {
+      // Track failed attempt
+      const { locked, remainingAttempts } = trackFailedAttempt(userId);
+      
+      if (locked) {
+        throw new Error(`Too many failed attempts. Your account has been locked for ${LOCKOUT_DURATION_MINUTES} minutes.`);
       }
+      
+      throw new Error(`Incorrect password. ${remainingAttempts} attempt(s) remaining.`);
+    }
+    
+    // Reset failed attempts on successful password verification
+    failedAttempts.delete(userId);
 
       // Disable MFA in the user's security preferences
       const { error: updateError } = await supabase
@@ -228,76 +327,103 @@ export const mfaService = {
     }
   },
 
-  // Verify a backup code
+  /**
+   * Verifies a backup code using secure comparison
+   * @param userId The user's ID
+   * @param request The backup code verification request
+   * @returns Object indicating if verification was successful
+   */
   async verifyBackupCode(userId: string, request: MfaBackupCodeVerifyRequest): Promise<{ success: boolean }> {
-    const { data: codes, error } = await supabase
-      .from('mfa_backup_codes')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_used', false);
+    try {
+      // Fetch all unused backup codes for the user
+      const { data: codes, error } = await supabase
+        .from<BackupCode>('mfa_backup_codes')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_used', false);
 
-    if (error) {
-      console.error('Error fetching backup codes:', error);
+      if (error) {
+        console.error('Error fetching backup codes:', error);
+        throw new Error('Failed to verify backup code');
+      }
+
+      if (!codes || codes.length === 0) {
+        return { success: false };
+      }
+
+      // Find a matching code using crypt() for secure comparison
+      for (const code of codes) {
+        // Use the stored hash as the salt in the crypt() function
+        // This will properly verify the code against the stored hash
+        if (code.code_hash === crypt(request.code, code.code_hash)) {
+          // Mark the code as used
+          const { error: updateError } = await supabase
+            .from('mfa_backup_codes')
+            .update({ 
+              is_used: true,
+              used_at: new Date().toISOString() 
+            })
+            .eq('id', code.id);
+          
+          if (updateError) {
+            console.error('Error marking backup code as used:', updateError);
+            throw new Error('Failed to update backup code status');
+          }
+          
+          return { success: true };
+        }
+      }
+
+      return { success: false };
+    } catch (error) {
+      console.error('Error in verifyBackupCode:', error);
       throw new Error('Failed to verify backup code');
     }
-
-    const code = codes?.find(c => 
-      c.code_hash === Buffer.from(request.code).toString('base64')
-    );
-
-    if (!code) {
-      return { success: false };
-    }
-
-    // Mark the code as used
-    await supabase
-      .from('mfa_backup_codes')
-      .update({ 
-        is_used: true,
-        used_at: new Date().toISOString() 
-      })
-      .eq('id', code.id);
-
-    return { success: true };
   },
 
   // Get MFA status for the current user
   async getMFAStatus(userId: string): Promise<MfaStatus> {
     try {
-      // Get user's MFA preferences
-      const { data: preferences, error: prefError } = await supabase
-        .from('user_security_preferences')
-        .select('mfa_enabled, mfa_method')
-        .eq('user_id', userId)
-        .single();
+      // Execute all database queries in parallel
+      const [
+        { data: preferences, error: prefError },
+        { data: factors, error: factorsError },
+        { count: backupCodesCount, error: codesError }
+      ] = await Promise.all([
+        // Get user's MFA preferences
+        supabase
+          .from('user_security_preferences')
+          .select('mfa_enabled, mfa_method')
+          .eq('user_id', userId)
+          .single(),
+        
+        // Get MFA factors
+        supabase
+          .from('mfa_factors')
+          .select('id, type, display_name, last_used_at')
+          .eq('user_id', userId),
+        
+        // Check if backup codes exist
+        supabase
+          .from('mfa_backup_codes')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('is_used', false)
+      ]);
 
+      // Handle any errors from the parallel queries
       if (prefError && prefError.code !== 'PGRST116') { // PGRST116 = no rows returned
         throw prefError;
+      }
+      if (factorsError) {
+        throw factorsError;
+      }
+      if (codesError) {
+        throw codesError;
       }
 
       const isMfaEnabled = preferences?.mfa_enabled || false;
       const mfaMethod = preferences?.mfa_method as MfaMethod | undefined;
-
-      // Get MFA factors
-      const { data: factors, error: factorsError } = await supabase
-        .from('mfa_factors')
-        .select('id, type, display_name, last_used_at')
-        .eq('user_id', userId);
-
-      if (factorsError) {
-        throw factorsError;
-      }
-
-      // Check if backup codes exist
-      const { count: backupCodesCount, error: codesError } = await supabase
-        .from('mfa_backup_codes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('is_used', false);
-
-      if (codesError) {
-        throw codesError;
-      }
 
       return {
         isMfaEnabled,
@@ -320,7 +446,7 @@ export const mfaService = {
   async generateNewBackupCodes(userId: string): Promise<string[]> {
     const { data: backupCodes, error } = await supabase.rpc('generate_backup_codes', {
       user_uuid: userId,
-      code_count: 8
+      code_count: MFA_CONFIG.backupCodes.count
     });
 
     if (error) {

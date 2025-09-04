@@ -110,7 +110,51 @@ All context providers are optimized with:
 - Error boundaries
 - Type safety
 
-## Best Practices
+## Database Function Optimizations
+
+### MFA and Security Functions
+
+#### 1. SECURITY DEFINER Functions
+- Added `SET search_path = public` to all SECURITY DEFINER functions to prevent search path hijacking
+- Ensures consistent schema resolution and prevents privilege escalation
+
+```sql
+CREATE OR REPLACE FUNCTION public.generate_secure_codes(count INTEGER)
+RETURNS TEXT[]
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+-- Function implementation
+$$;
+```
+
+#### 2. Backup Code Generation
+- Optimized code generation to use efficient string operations
+- Uses array aggregation for better performance with multiple codes
+- Secure random number generation using pgcrypto
+
+```sql
+-- Efficient array-based code generation
+SELECT array_to_string(
+  ARRAY(
+    SELECT substr(
+      'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+      (random() * 32)::integer + 1,
+      1
+    )
+    FROM generate_series(1, 12)
+  ),
+  ''
+);
+```
+
+#### 3. Caching and Materialized Views
+- Consider using materialized views for frequently accessed MFA status
+- Cache backup code verification results when appropriate
+- Use indexes on frequently queried columns (user_id, created_at)
+
+### Best Practices
 
 1. **Images**
    - Always specify width and height

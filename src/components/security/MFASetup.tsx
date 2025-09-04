@@ -16,7 +16,11 @@ import { cn } from '@/lib/utils';
 type Step = 'intro' | 'scan' | 'verify' | 'backup' | 'complete';
 type SetupMethod = 'app' | 'sms' | 'email';
 
-export function MFASetup() {
+interface MFASetupProps {
+  onSetupComplete?: () => void;
+}
+
+export function MFASetup({ onSetupComplete }: MFASetupProps) {
   const {
     mfaStatus,
     isLoading,
@@ -47,14 +51,17 @@ export function MFASetup() {
     };
   }, [clearError]);
 
-  // Handle initial state based on MFA status
+  // Handle initial state based on MFA status and call onSetupComplete when MFA is enabled
   useEffect(() => {
     if (mfaStatus?.isMfaEnabled) {
       setStep('complete');
+      if (onSetupComplete) {
+        onSetupComplete();
+      }
     } else if (isSetupInProgress) {
       setStep('scan');
     }
-  }, [mfaStatus, isSetupInProgress]);
+  }, [mfaStatus, isSetupInProgress, onSetupComplete]);
   
   // Handle errors
   useEffect(() => {
@@ -96,6 +103,8 @@ export function MFASetup() {
       const success = await verify2FASetup(verificationCode);
       
       if (success) {
+        // Confirm the 2FA setup and refresh the status
+        await confirm2FASetup();
         // Move to backup codes step
         setStep('backup');
       }
@@ -224,8 +233,8 @@ export function MFASetup() {
 
             <div className="bg-muted p-4 rounded-md">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-sm">
-                {backupCodes.map((code, i) => (
-                  <div key={i} className="p-2 bg-background rounded">
+                {backupCodes.map((code) => (
+                  <div key={code} className="p-2 bg-background rounded">
                     {code}
                   </div>
                 ))}
