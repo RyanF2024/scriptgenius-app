@@ -85,7 +85,7 @@ export default function SecurityPage() {
   const onSubmit = async (values: PasswordFormValues) => {
     try {
       setIsLoading(true);
-      const { error } = await updatePassword(values.newPassword);
+      const { error } = await updatePassword(values.currentPassword, values.newPassword);
       
       if (error) throw error;
       
@@ -98,9 +98,10 @@ export default function SecurityPage() {
       form.reset();
     } catch (error) {
       console.error('Error updating password:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update password. Please try again.';
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update password. Please try again.',
+        description: errorMessage,
         type: 'error',
       });
     } finally {

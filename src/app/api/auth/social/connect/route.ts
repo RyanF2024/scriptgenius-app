@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   if (!provider) {
     return NextResponse.redirect(
       `${requestUrl.origin}/account/security?error=invalid_provider`,
-      { status: 400 }
+      { status: 307 }
     );
   }
 
@@ -26,11 +26,11 @@ export async function GET(request: Request) {
     },
   });
 
-  if (error) {
-    console.error('Error connecting social account:', error);
+  if (error || !data?.url) {
+    console.error('Failed to connect social account: Authentication provider error');
     return NextResponse.redirect(
       `${requestUrl.origin}/account/security?error=connection_failed`,
-      { status: 500 }
+      { status: 307 }
     );
   }
 

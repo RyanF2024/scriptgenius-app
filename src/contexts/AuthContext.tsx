@@ -52,7 +52,7 @@ interface AuthState {
   signOut: () => Promise<{ error: AuthError | null }>;
   signInWithOAuth: (provider: 'google' | 'github') => Promise<{ error: AuthError | null }>;
   sendPasswordResetEmail: (email: string) => Promise<{ error: AuthError | null }>;
-  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ error: AuthError | null }>;
   refreshSession: () => Promise<{ error: AuthError | null }>;
   clearError: () => void;
 }
@@ -369,36 +369,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(operation, true);
     try {
       const { error } = await authService.resetPassword(email);
-      if (!error) {
-        toast({
-          title: 'Email sent',
-          description: 'Check your email for the password reset link',
-        });
-      }
-      return handleError(error, 'Failed to send password reset email', operation);
+      if (error) throw error;
+      toast({
+        title: 'Email sent',
+        description: 'Check your email for the password reset link',
+        type: 'success',
+      });
+      return { error: null };
+    } catch (error) {
+      return { error: handleError(error as Error, 'Failed to send password reset email', operation) };
     } finally {
       setLoading(operation, false);
     }
   }, [handleError, setLoading, toast]);
 
-  const updatePassword = useCallback(async (newPassword: string) => {
+  const updatePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     const operation: AuthOperation = 'updatePassword';
     setLoading(operation, true);
     try {
-      const { error } = await authService.updatePassword(newPassword);
-      if (!error) {
-        toast({
-          title: 'Success',
-          description: 'Your password has been updated',
-        });
-      }
-      return handleError(error, 'Failed to update password', operation);
+      const { error } = await authService.updatePassword(currentPassword, newPassword);
+      if (error) throw error;
+      
+      toast({
+        title: 'Success',
+        description: 'Your password has been updated successfully.',
+        type: 'success',
+      });
+      return { error: null };
+    } catch (error) {
+      return { error: handleError(error as Error, 'Failed to update password', operation) };
     } finally {
       setLoading(operation, false);
     }
   }, [handleError, setLoading, toast]);
 
-  const refreshSession = useCallback(async (): Promise<{ error: AuthError | null }> => {
+  const refreshSession = useCallback(async () => {
     return refreshSessionWithRetry();
   }, [refreshSessionWithRetry]);
 

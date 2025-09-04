@@ -41,6 +41,7 @@ CREATE OR REPLACE FUNCTION public.generate_secure_codes(count INTEGER)
 RETURNS TEXT[]
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   codes TEXT[] := '{}';
@@ -48,7 +49,7 @@ DECLARE
   code TEXT;
 BEGIN
   FOR i IN 1..count LOOP
-    -- Generate a random 10-character alphanumeric code
+    -- Generate a random 12-character alphanumeric code
     code := array_to_string(
       ARRAY(
         SELECT substr(
@@ -56,7 +57,7 @@ BEGIN
           (random() * 32)::integer + 1,
           1
         )
-        FROM generate_series(1, 10)
+        FROM generate_series(1, 12)
       ),
       ''
     );
@@ -65,8 +66,7 @@ BEGIN
     code := 
       substr(code, 1, 4) || '-' ||
       substr(code, 5, 4) || '-' ||
-      substr(code, 9, 2) || '-' ||
-      substr(code, 11, 2);
+      substr(code, 9, 4);
       
     codes := array_append(codes, code);
   END LOOP;

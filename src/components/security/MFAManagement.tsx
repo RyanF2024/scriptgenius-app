@@ -60,7 +60,12 @@ export function MFAManagement() {
         >
           ← Back to security settings
         </Button>
-        <MFASetup />
+        <MFASetup 
+          onSetupComplete={() => {
+            refreshMFAStatus();
+            setShowSetup(false);
+          }} 
+        />
       </div>
     );
   }

@@ -14,8 +14,16 @@ export async function GET(request: Request) {
   }
 
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies });
-    await supabase.auth.exchangeCodeForSession(code);
+    try {
+      const supabase = createRouteHandlerClient({ cookies });
+      await supabase.auth.exchangeCodeForSession(code);
+    } catch (error) {
+      console.error('Error exchanging code for session:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to authenticate with social provider';
+      return NextResponse.redirect(
+        `${requestUrl.origin}/account/security?error=${encodeURIComponent(errorMessage)}`
+      );
+    }
   }
 
   return NextResponse.redirect(`${requestUrl.origin}/account/security`);

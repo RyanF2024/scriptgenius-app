@@ -1,4 +1,4 @@
-import { Database } from './supabase';
+import type { Database } from './supabase';
 
 export type Profile = Database['public']['Tables']['profiles']['Row'] & {
   avatar_path?: string | null;

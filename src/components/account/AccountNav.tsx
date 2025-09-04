@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -9,7 +11,7 @@ const navigation = [
 ];
 
 export function AccountNav() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
 
   return (
     <nav className="flex space-x-4 border-b" aria-label="Account navigation">

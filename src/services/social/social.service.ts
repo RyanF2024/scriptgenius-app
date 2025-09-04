@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
-import type { Provider } from '@supabase/supabase-js';
+import type { Provider, UserIdentity } from '@supabase/supabase-js';
 
 // Define the supported providers
 type SocialProvider = 'google' | 'github' | 'azure';
@@ -39,38 +39,54 @@ export const socialService = {
 
   // Disconnect a social account
   async disconnectSocialAccount(providerId: string) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('User not authenticated');
 
-    // Get current user's identities
-    const { data: identities, error: fetchError } = await supabase
-      .from('identities')
-      .select('*')
-      .eq('user_id', user.id);
+    // Get user's identities
+    const { data: { user: userWithIdentities }, error: fetchError } = await supabase.auth.getUser();
+    
+    if (fetchError || !userWithIdentities) {
+      console.error('Error fetching user:', fetchError);
+      throw new Error('Failed to fetch user data');
+    }
 
-    if (fetchError) throw fetchError;
-
+    const userIdentities = userWithIdentities.identities || [];
+    
     // Find the identity to remove
-    const identityToRemove = identities?.find(id => id.provider === providerId);
+    const identityToRemove = userIdentities.find((id: UserIdentity) => id.provider === providerId);
     if (!identityToRemove) {
       throw new Error('Social account not found');
     }
 
-    // If this is the last identity and no password is set, prevent removal
-    if (identities?.length === 1) {
-      const { data: authUser } = await supabase.auth.getUser();
-      if (!authUser.user?.email) {
+    // If this is the last identity, check if user has a password set
+    if (userIdentities.length === 1) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      // Check if user has a password set by attempting to reauthenticate with an empty password
+      // If this fails with 'Invalid login credentials', it means a password is set
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: ''
+      });
+      
+      // If there's no error or the error is not 'Invalid login credentials',
+      // it means the user doesn't have a password set
+      if (!signInError || signInError.message !== 'Invalid login credentials') {
         throw new Error('Cannot remove the last authentication method. Please set a password first.');
       }
     }
 
-    // Remove the identity
-    const { error: deleteError } = await supabase
-      .from('identities')
-      .delete()
-      .eq('id', identityToRemove.id);
+    // Unlink the identity using Supabase Auth API
+    const { error: unlinkError } = await supabase.auth.unlinkIdentity(identityToRemove);
 
-    if (deleteError) throw deleteError;
+    if (unlinkError) {
+      console.error('Error unlinking identity:', unlinkError);
+      throw new Error('Failed to unlink the social account. Please try again.');
+    }
     return { success: true };
   },
 
@@ -79,12 +95,18 @@ export const socialService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data: identities, error } = await supabase
-      .from('identities')
-      .select('provider, identity_data')
-      .eq('user_id', user.id);
+    // Get user identities using Supabase Auth API
+    const { data: { identities }, error } = await supabase.auth.getUserIdentities();
 
-    if (error) throw error;
-    return identities || [];
+    if (error) {
+      console.error('Error fetching connected accounts:', error);
+      return [];
+    }
+
+    // Map the identities to match the expected format
+    return (identities || []).map(identity => ({
+      provider: identity.provider,
+      identity_data: identity.identity_data
+    }));
   },
 };

@@ -164,19 +164,30 @@ export function MFAProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchMFAStatus]);
   
-  const confirm2FASetup = useCallback((codes: string[]) => {
-    setBackupCodes(codes);
-    setIsSetupInProgress(false);
-    
-    // Show success message
-    toast({
-      title: '2FA Enabled',
-      description: 'Two-factor authentication has been successfully set up.',
-      type: 'success',
-    });
-    
-    // Refresh the MFA status
-    fetchMFAStatus().catch(console.error);
+  const confirm2FASetup = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      // First, refresh the MFA status to get the latest backup codes
+      await fetchMFAStatus();
+      
+      // Show success message
+      toast({
+        title: '2FA Enabled',
+        description: 'Two-factor authentication has been successfully set up.',
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error confirming 2FA setup:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to complete 2FA setup. Please try again.',
+        type: 'error',
+      });
+      throw error;
+    } finally {
+      setIsSetupInProgress(false);
+      setIsLoading(false);
+    }
   }, [fetchMFAStatus, toast]);
 
   const disable2FA = useCallback(async (password: string) => {

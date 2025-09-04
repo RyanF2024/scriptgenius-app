@@ -22,8 +22,26 @@ export const storageService = {
         throw new Error('File size too large. Maximum size is 5MB.');
       }
 
+      // Delete any existing avatars for this user
+      const { data: existingFiles, error: listError } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .list(userId);
+
+      if (listError) throw listError;
+
+      // Delete all existing avatar files for this user
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToDelete = existingFiles.map(file => `${userId}/${file.name}`);
+        const { error: deleteError } = await supabase.storage
+          .from(AVATAR_BUCKET)
+          .remove(filesToDelete);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Upload new avatar with consistent filename
       const fileExt = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
+      const fileName = `avatar.${fileExt}`;
       const filePath = `${userId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -35,10 +53,10 @@ export const storageService = {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL with cache busting
       const { data: { publicUrl } } = supabase.storage
         .from(AVATAR_BUCKET)
-        .getPublicUrl(filePath);
+        .getPublicUrl(`${filePath}?v=${Date.now()}`);
 
       return { path: publicUrl, error: null };
     } catch (error) {
@@ -50,9 +68,14 @@ export const storageService = {
   // Delete a file from storage
   async deleteFile(filePath: string): Promise<{ error: Error | null }> {
     try {
+      // If the input looks like a URL, extract the path
+      const relativePath = filePath.includes('http')
+        ? this.getFilePathFromUrl(filePath)
+        : filePath;
+      
       const { error } = await supabase.storage
         .from(AVATAR_BUCKET)
-        .remove([filePath]);
+        .remove([relativePath]);
 
       if (error) throw error;
       return { error: null };
@@ -64,8 +87,21 @@ export const storageService = {
 
   // Extract file path from URL
   getFilePathFromUrl(url: string): string {
-    const urlObj = new URL(url);
-    return urlObj.pathname.split(`${AVATAR_BUCKET}/`).pop() || '';
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split(`${AVATAR_BUCKET}/`);
+      
+      // If the URL doesn't contain the bucket name, return an empty string
+      if (pathParts.length < 2) {
+        return '';
+      }
+      
+      // Return the part after the bucket name
+      return pathParts[1];
+    } catch (error) {
+      console.error('Error parsing URL:', error);
+      return '';
+    }
   }
 };
 

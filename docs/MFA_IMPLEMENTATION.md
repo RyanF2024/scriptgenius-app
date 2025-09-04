@@ -7,17 +7,27 @@
 - **Purpose**: Manages MFA state and provides methods for MFA operations
 - **Key Methods**:
   - `start2FASetup()`: Initiates MFA setup
-  - `verify2FASetup(code)`: Verifies MFA setup
-  - `disable2FA(password)`: Disables MFA
-  - `generateNewBackupCodes()`: Generates new backup codes
+  - `verify2FASetup(code)`: Verifies MFA setup with a TOTP code
+  - `disable2FA(password)`: Disables MFA (requires password verification)
+  - `generateNewBackupCodes()`: Generates new backup codes (replaces existing ones)
+  - `verifyBackupCode(code)`: Verifies a backup code
 
 ### 2. MFA Service
 - **Location**: `src/services/mfa/mfa.service.ts`
 - **Purpose**: Handles MFA business logic and API calls
 - **Key Functions**:
   - `setup2FA()`: Sets up MFA for a user
-  - `verify2FACode()`: Verifies MFA codes
-  - `disable2FA()`: Disables MFA
+  - `verify2FACodeForFactor()`: Verifies MFA codes for a specific factor
+  - `disable2FA()`: Disables MFA with password verification
+  - `generateBackupCodes()`: Generates secure backup codes (12-char format: XXXX-XXXX-XXXX)
+  - `verifyBackupCode()`: Verifies backup codes using bcrypt hashing
+
+### 3. Security Measures
+- All SECURITY DEFINER functions include `SET search_path = public`
+- Backup codes are hashed using bcrypt before storage
+- Audit logging for all security-sensitive operations
+- Rate limiting and account lockout for failed attempts
+- Secure session management
   - `generateBackupCodes()`: Creates backup codes
 
 ### 3. Database Tables

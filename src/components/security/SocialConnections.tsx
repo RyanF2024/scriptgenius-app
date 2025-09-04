@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 
-type SocialProvider = 'google' | 'github' | 'microsoft';
+type SocialProvider = 'google' | 'github' | 'azure';
 
 const providerConfigs: Record<SocialProvider, { name: string; icon: React.ReactNode }> = {
   google: {
@@ -29,11 +29,14 @@ const providerConfigs: Record<SocialProvider, { name: string; icon: React.ReactN
       </svg>
     ),
   },
-  microsoft: {
+  azure: {
     name: 'Microsoft',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 23 23" fill="currentColor">
-        <path d="M0 0h11.5v11.5H0zM12.5 0H24v11.5H12.5zM0 12.5h11.5V24H0zM12.5 12.5H24V24H12.5z" />
+        <path d="M11.5 11.5h10.5v10.5H11.5z" fill="#f25022" />
+        <path d="M11.5 0h10.5v10.5H11.5z" fill="#7fba00" />
+        <path d="M0 11.5h10.5v10.5H0z" fill="#00a4ef" />
+        <path d="M0 0h10.5v10.5H0z" fill="#ffb900" />
       </svg>
     ),
   },
@@ -59,22 +62,50 @@ export function SocialConnections() {
 
   const handleDisconnect = async (provider: string) => {
     try {
+      if (accounts.length <= 1) {
+        toast({
+          title: 'Cannot Disconnect',
+          description: 'You must have at least one connected account.',
+          type: 'error',
+        });
+        return;
+      }
+      
       setDisconnectingProvider(provider);
       await disconnectAccount(provider);
+      
+      toast({
+        title: 'Disconnected',
+        description: 'The account has been disconnected successfully.',
+        type: 'success',
+      });
     } catch (error) {
       console.error('Error disconnecting account:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to disconnect the account. Please try again.',
+        type: 'error',
+      });
     } finally {
       setDisconnectingProvider(null);
     }
   };
 
+  // Create a map of provider to account for O(1) lookups
+  const providerAccountMap = accounts.reduce<Record<string, typeof accounts[number]>>(
+    (acc, account) => {
+      acc[account.provider] = account;
+      return acc;
+    },
+    {}
+  );
+
   const isConnected = (provider: string) => {
-    return accounts.some(account => account.provider === provider);
+    return provider in providerAccountMap;
   };
 
   const getAccountEmail = (provider: string) => {
-    const account = accounts.find(acc => acc.provider === provider);
-    return account?.identity_data?.email || '';
+    return providerAccountMap[provider]?.identity_data?.email || '';
   };
 
   return (
