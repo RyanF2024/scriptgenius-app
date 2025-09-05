@@ -19,10 +19,11 @@ A comprehensive authentication and security system for Next.js applications, inc
 - **Multiple Factors** - Support for multiple verification methods
 
 ### Account Security
-- **Password Management** - Secure password policies and reset flows
-- **Session Management** - View and manage active sessions
+- **Password Management** - Secure password policies and reset flows with proper error handling
+- **Session Management** - View and manage active sessions with automatic cleanup
 - **Security Events** - Log and monitor security-related activities
-- **Account Recovery** - Secure account recovery options
+- **Account Recovery** - Secure account recovery options with email verification
+- **Profile Management** - Secure profile updates with file upload validation and error handling
 
 ## Installation
 

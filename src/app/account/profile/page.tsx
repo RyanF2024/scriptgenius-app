@@ -131,10 +131,8 @@ export default function ProfilePage() {
         updateData.avatar_url = selectedFile;
       }
       
-      // Update profile
-      const { error } = await updateProfile(updateData);
-      
-      if (error) throw error;
+      // Update profile - errors are handled by the catch block
+      await updateProfile(updateData);
       
       // Refresh profile data
       await refreshProfile();

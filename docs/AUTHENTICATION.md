@@ -28,6 +28,7 @@ MFA adds an extra layer of security to user accounts by requiring a second form 
 To enable MFA for a user account:
 
 ```tsx
+import { useState } from 'react';
 import { useMFA } from '@/contexts/MFAContext';
 
 function MFASetupComponent() {

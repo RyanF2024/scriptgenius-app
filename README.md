@@ -9,6 +9,12 @@ A high-performance web application for script generation and management, built w
   - Custom analysis personas (executive, writer, coach)
   - Adjustable tone settings
 
+- **Security & Authentication**
+  - Multi-factor authentication (TOTP, backup codes)
+  - Secure session management
+  - Role-based access control
+  - Secure file uploads with validation
+
 - **Comprehensive Reporting**
   - PDF report generation
   - Multiple analysis perspectives
@@ -18,6 +24,7 @@ A high-performance web application for script generation and management, built w
   - Responsive design
   - Intuitive interface
   - Real-time feedback
+  - Profile management with image optimization
 
 ## 🛠 Technical Stack
 

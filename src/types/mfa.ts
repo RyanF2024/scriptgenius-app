@@ -31,7 +31,7 @@ export interface MfaStatus {
   hasBackupCodes: boolean;
   factors: Array<{
     id: string;
-    type: string;
+    type: MfaMethod;
     displayName?: string;
     lastUsedAt?: string;
   }>;

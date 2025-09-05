@@ -49,7 +49,8 @@ with check (auth.uid() = user_id);
 
 create policy "Users can update their own 2FA factors"
 on public.mfa_factors for update
-using (auth.uid() = user_id);
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 create policy "Users can delete their own 2FA factors"
 on public.mfa_factors for delete
@@ -66,7 +67,8 @@ with check (auth.uid() = user_id);
 
 create policy "Users can update their own backup codes"
 on public.mfa_backup_codes for update
-using (auth.uid() = user_id);
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 -- RLS policies for user_security_preferences
 create policy "Users can view their own security preferences"
