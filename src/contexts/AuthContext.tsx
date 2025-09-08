@@ -499,5 +499,3 @@ export function withAuth<P extends object>(
 
   return WithAuth;
 }
-
-export { AuthProvider, AuthErrorBoundary };

@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { FC, ReactNode, useState, useCallback, useContext, useMemo, useEffect } from 'react';
+import { FC, ReactNode, createContext, useState, useCallback, useContext, useMemo, useEffect } from 'react';
 
 type ToastType = 'default' | 'success' | 'error' | 'warning' | 'info';
 
@@ -19,13 +18,13 @@ interface ToastContextType {
   removeToast: (id: string) => void;
 }
 
-const ToastContext = React.createContext<ToastContextType | undefined>(undefined);
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 interface ToastProviderProps {
   children: ReactNode;
 }
 
-const ToastProvider: FC<ToastProviderProps> = ({ children }) => {
+export const ToastProvider: FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const toast = useCallback(({ duration = 5000, ...options }: ToastOptions) => {
@@ -38,9 +37,7 @@ const ToastProvider: FC<ToastProviderProps> = ({ children }) => {
 
     if (duration !== 0) {
       setTimeout(() => {
-        setToasts((currentToasts) => 
-          currentToasts.filter((t) => t.id !== id)
-        );
+        setToasts((currentToasts) => currentToasts.filter((t) => t.id !== id));
       }, duration);
     }
 
@@ -48,9 +45,7 @@ const ToastProvider: FC<ToastProviderProps> = ({ children }) => {
   }, []);
 
   const removeToast = useCallback((id: string) => {
-    setToasts((currentToasts) => 
-      currentToasts.filter((t) => t.id !== id)
-    );
+    setToasts((currentToasts) => currentToasts.filter((t) => t.id !== id));
   }, []);
 
   const value = useMemo(() => ({
@@ -74,8 +69,6 @@ const useToast = (): ToastContextType => {
   }
   return context;
 };
-
-export { ToastProvider };
 
 const Toaster: FC = () => {
   const { toasts, removeToast, toast } = useToast();
@@ -124,6 +117,7 @@ const Toaster: FC = () => {
               {t.description && <p className="text-sm mt-1">{t.description}</p>}
             </div>
             <button
+              type="button"
               onClick={() => removeToast(t.id)}
               className="ml-4 text-gray-500 hover:text-gray-700"
               aria-label="Close"
@@ -137,4 +131,4 @@ const Toaster: FC = () => {
   );
 };
 
-export { ToastProvider, useToast };
+export { useToast };

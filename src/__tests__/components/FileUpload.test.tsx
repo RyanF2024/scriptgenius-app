@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FileUpload } from '@/components/ui/FileUpload';
-import { act } from 'react-dom/test-utils';
+import { describe, it, expect, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 // Mock the File and FileReader APIs
 class MockFileReader {

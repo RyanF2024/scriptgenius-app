@@ -30,56 +30,15 @@ export const supabase = createClient();
 
 // Server-side client for use in API routes
 export function createServerClient(cookies: { get: (name: string) => { value: string } | undefined }) {
+  const { createServerClient: createSupaServerClient } = require('@supabase/ssr');
+  
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     throw new Error('Missing Supabase environment variables');
   }
 
-  const cookieStore = cookies();
-  
-  return createServerClient<Database>(
+  return createSupaServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
-    }
-  );
-}
-
-// Admin client for server-side operations (use with caution)
-export function createServiceRoleClient() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing Supabase service role environment variables');
-  }
-
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
-}
-
-// Helper function to get the server-side client with service role key
-export const createServerClient = (cookies: any) => {
-  const { createServerClient: createSupaServerClient } = require('@supabase/ssr');
-  
-  return createSupaServerClient<Database>(
-    env.supabaseUrl,
-    env.supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -94,18 +53,19 @@ export const createServerClient = (cookies: any) => {
       },
     }
   );
-};
+}
 
-// Helper function to get the service role client (server-side only)
-export const createServiceRoleClient = () => {
-  if (typeof window !== 'undefined') {
-    throw new Error('This function should only be called on the server side');
-  }
+// Admin client for server-side operations (use with caution)
+export function createServiceRoleClient() {
+  const { createServerClient } = require('@supabase/ssr');
   
-  const { createClient } = require('@supabase/supabase-js');
-  return createClient<Database>(
-    env.supabaseUrl,
-    env.supabaseServiceRoleKey,
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Missing Supabase service role environment variables');
+  }
+
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
       auth: {
         autoRefreshToken: false,
