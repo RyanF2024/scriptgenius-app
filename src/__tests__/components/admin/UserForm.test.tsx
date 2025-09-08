@@ -1,5 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '../../test-utils';
-import { UserForm } from '@/components/admin/users/UserForm';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { UserForm } from '@/components/admin/UserForm';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 import { UserRole } from '@prisma/client';
 import userEvent from '@testing-library/user-event';
 

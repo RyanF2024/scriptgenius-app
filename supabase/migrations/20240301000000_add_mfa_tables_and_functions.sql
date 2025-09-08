@@ -1,6 +1,17 @@
 -- Enable pgcrypto for secure random string generation
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Table to store user security preferences
+CREATE TABLE IF NOT EXISTS public.user_security_preferences (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  mfa_secret TEXT,
+  mfa_method TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_mfa_verification TIMESTAMPTZ
+);
+
 -- Table to store MFA factors
 CREATE TABLE IF NOT EXISTS public.mfa_factors (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

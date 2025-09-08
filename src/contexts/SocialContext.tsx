@@ -34,7 +34,10 @@ export function SocialProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchAccounts = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setAccounts([]); // Clear accounts when there's no user
+      return;
+    }
     
     try {
       setIsLoading(true);

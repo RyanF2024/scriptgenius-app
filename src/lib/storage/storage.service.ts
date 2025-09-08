@@ -49,6 +49,7 @@ export const storageService = {
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
+          contentType: file.type || 'application/octet-stream',
         });
 
       if (uploadError) throw uploadError;

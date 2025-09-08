@@ -1,7 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '../test-utils';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EnhancedForm, FormField } from '@/components/ui/form/EnhancedForm';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
+import { describe, it, expect, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 // Test schema
 const testSchema = z.object({

@@ -9,6 +9,12 @@ A high-performance web application for script generation and management, built w
   - Custom analysis personas (executive, writer, coach)
   - Adjustable tone settings
 
+- **Security & Authentication**
+  - Multi-factor authentication (TOTP, backup codes)
+  - Secure session management
+  - Role-based access control
+  - Secure file uploads with validation
+
 - **Comprehensive Reporting**
   - PDF report generation
   - Multiple analysis perspectives
@@ -18,6 +24,7 @@ A high-performance web application for script generation and management, built w
   - Responsive design
   - Intuitive interface
   - Real-time feedback
+  - Profile management with image optimization
 
 ## 🛠 Technical Stack
 
@@ -66,11 +73,13 @@ For comprehensive documentation, please visit our [Documentation Hub](https://gi
 
 ### Quick Links
 
-- [Master Checklist](https://github.com/RyanF2024/scriptgenius-app/blob/main/MASTER_CHECKLIST.md) - Single source of truth for all project requirements and features
-- [Changelog](https://github.com/RyanF2024/scriptgenius-app/blob/main/CHANGELOG.md) - Track all notable changes to the project
-- [User Guide](https://github.com/RyanF2024/scriptgenius-app/blob/main/docs/USER-GUIDE.md) - Getting started and feature guides
-- [API Reference](https://github.com/RyanF2024/scriptgenius-app/blob/main/docs/API.md) - Complete API documentation
-- [AI Integration](https://github.com/RyanF2024/scriptgenius-app/blob/main/docs/AI-INTEGRATION.md) - Comprehensive guide to AI features and implementation
+- [Master Checklist](./MASTER_CHECKLIST.md) - Single source of truth for all project requirements and features
+- [Changelog](./CHANGELOG.md) - Track all notable changes to the project
+- [Authentication](./docs/AUTHENTICATION.md) - Authentication and security implementation
+- [MFA Implementation](./docs/MFA_IMPLEMENTATION.md) - Multi-Factor Authentication details
+- [Performance Optimizations](./docs/PERFORMANCE_OPTIMIZATIONS.md) - Performance best practices
+- [Profile Management](./docs/PROFILE_MANAGEMENT.md) - User profiles and avatar management
+- [Database Schema](./docs/DATABASE_SCHEMA.md) - Database structure and RLS policies
 
 ## 🏗 Project Structure
 

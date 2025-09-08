@@ -1,20 +1,20 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { act } from 'react-dom/test-utils';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { authService } from '@/services/auth/auth.service';
 
 // Mock the auth service
-jest.mock('@/services/auth/auth.service', () => ({
+vi.mock('@/services/auth/auth.service', () => ({
   authService: {
-    signIn: jest.fn(),
-    signUp: jest.fn(),
-    signOut: jest.fn(),
-    signInWithOAuth: jest.fn(),
-    resetPassword: jest.fn(),
-    updatePassword: jest.fn(),
-    getSession: jest.fn(),
-    refreshSession: jest.fn(),
-    onAuthStateChange: jest.fn(),
+    signIn: vi.fn(),
+    signUp: vi.fn(),
+    signOut: vi.fn(),
+    signInWithOAuth: vi.fn(),
+    resetPassword: vi.fn(),
+    updatePassword: vi.fn(),
+    getSession: vi.fn(),
+    refreshSession: vi.fn(),
+    onAuthStateChange: vi.fn(),
   },
 }));
 

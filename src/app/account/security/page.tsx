@@ -63,13 +63,22 @@ export default function SecurityPage() {
 
     try {
       setIsDeletingAccount(true);
-      // TODO: Implement account deletion logic
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Account deletion is not yet implemented
+      throw new Error('Account deletion is not yet implemented');
+      /* Uncomment when implementing
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete account');
+      
       toast({
         title: 'Account Deletion Requested',
         description: 'Your account deletion request has been received. You will receive a confirmation email shortly.',
         type: 'success',
       });
+      */
     } catch (error) {
       console.error('Error deleting account:', error);
       toast({
@@ -89,12 +98,7 @@ export default function SecurityPage() {
       
       if (error) throw error;
       
-      toast({
-        title: 'Success',
-        description: 'Your password has been updated successfully.',
-        type: 'success',
-      });
-      
+      // Success toast is handled in the AuthContext
       form.reset();
     } catch (error) {
       console.error('Error updating password:', error);
