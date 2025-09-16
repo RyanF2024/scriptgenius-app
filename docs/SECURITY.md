@@ -3,12 +3,57 @@
 This document outlines the security measures implemented in the ScriptGenius application to protect user data and ensure secure operations.
 
 ## Table of Contents
+- [Authentication & MFA](#authentication--mfa)
 - [File Upload Security](#file-upload-security)
 - [Rate Limiting](#rate-limiting)
-- [Authentication & Authorization](#authentication--authorization)
+- [Session Management](#session-management)
 - [Data Protection](#data-protection)
 - [Security Headers](#security-headers)
 - [Monitoring & Logging](#monitoring--logging)
+- [Account Recovery](#account-recovery)
+
+## Authentication & MFA
+
+### Multi-Factor Authentication (MFA)
+- **TOTP-based 2FA**
+  - Time-based One-Time Password (TOTP) implementation
+  - Compatible with authenticator apps (Google Authenticator, Authy, etc.)
+  - 30-second rolling codes for enhanced security
+
+### Secure Authentication Flows
+- **Password Requirements**
+  - Minimum 12 characters
+  - Requires uppercase, lowercase, numbers, and special characters
+  - Password strength meter with zxcvbn integration
+  - Breached password detection
+
+### Account Protection
+- **Failed Login Protection**
+  - Progressive delay after failed attempts
+  - Account lockout after 5 failed attempts
+  - Automatic unlock after 30 minutes
+  - Email notifications for suspicious activity
+
+### API Security
+- **JWT Authentication**
+  - Short-lived access tokens (15 minutes)
+  - Refresh tokens with rotation
+  - Token invalidation on logout
+  - Secure cookie settings (HttpOnly, Secure, SameSite)
+
+## Session Management
+
+### Session Security
+- **Session Expiration**
+  - Inactive session timeout: 24 hours
+  - Absolute session lifetime: 7 days
+  - Force re-authentication for sensitive operations
+
+### Device Management
+- Device fingerprinting for session binding
+- Concurrent session control
+- Session termination from account settings
+- Email notifications for new device logins
 
 ## File Upload Security
 
@@ -208,6 +253,34 @@ module.exports = {
 ```
 
 ## Monitoring & Logging
+
+### Security Event Logging
+- **Audit Logs**
+  - All authentication attempts (success/failure)
+  - Password changes and resets
+  - MFA enrollment and usage
+  - Sensitive data access
+  - Administrative actions
+
+### Real-time Monitoring
+- Anomaly detection for suspicious activities
+- Automated alerts for security events
+- Rate limiting and abuse prevention
+- IP reputation monitoring
+
+## Account Recovery
+
+### Secure Recovery Process
+- Time-limited recovery tokens
+- MFA requirement for recovery operations
+- Recovery code generation and storage
+- Notification of recovery attempts
+
+### Data Backup
+- Encrypted database backups
+- Point-in-time recovery capability
+- Regular backup integrity checks
+- Off-site backup storage
 
 ### Security Events
 

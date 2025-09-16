@@ -1,8 +1,53 @@
 # Multi-Factor Authentication (MFA) Implementation
 
-## Key Components
+This document details the TOTP-based Multi-Factor Authentication implementation in ScriptGenius, including backup code management and security considerations.
 
-### 1. MFA Context
+## Table of Contents
+- [Architecture Overview](#architecture-overview)
+- [TOTP Implementation](#totp-implementation)
+- [Backup Code Management](#backup-code-management)
+- [Security Considerations](#security-considerations)
+- [Recovery Flows](#recovery-flows)
+- [Rate Limiting](#rate-limiting)
+- [Audit Logging](#audit-logging)
+
+## Architecture Overview
+
+### System Components
+
+#### 1. Frontend Components
+- **MFA Setup Wizard**
+  - QR code generation and display
+  - Manual entry code display
+  - Verification code input
+  - Backup code display and download
+
+#### 2. Backend Services
+- **MFA Service**
+  - TOTP secret generation
+  - Code verification
+  - Session management
+  - Rate limiting
+
+#### 3. Database Schema
+- `mfa_factors` - Stores active MFA factors
+- `mfa_backup_codes` - Hashed backup codes
+- `audit_log` - Security event logging
+
+## TOTP Implementation
+
+### 1. TOTP Configuration
+```typescript
+const TOTP_CONFIG = {
+  issuer: 'ScriptGenius',
+  algorithm: 'SHA1',
+  digits: 6,
+  period: 30, // seconds
+  window: 1,  // number of time steps to check before/after
+};
+```
+
+### 2. MFA Context
 - **Location**: `src/contexts/MFAContext.tsx`
 - **Purpose**: Manages MFA state and provides methods for MFA operations
 - **Key Methods**:
@@ -12,7 +57,39 @@
   - `generateNewBackupCodes()`: Generates new backup codes (replaces existing ones)
   - `verifyBackupCode(code)`: Verifies a backup code
 
-### 2. MFA Service
+### 3. MFA Service
+
+#### TOTP Operations
+```typescript
+// Generate a new TOTP secret
+async function generateTOTPSecret(userId: string) {
+  const secret = speakeasy.generateSecret({
+    length: 32,
+    name: `ScriptGenius:${userId}`,
+    issuer: TOTP_CONFIG.issuer,
+  });
+  
+  // Store the secret in the database
+  await storeMFASecret(userId, secret.base32);
+  
+  return {
+    secret: secret.base32,
+    otpauthUrl: secret.otpauth_url,
+  };
+}
+
+// Verify TOTP code
+async function verifyTOTPCode(userId: string, code: string) {
+  const secret = await getMFASecret(userId);
+  
+  return speakeasy.totp.verify({
+    secret,
+    encoding: 'base32',
+    token: code,
+    window: TOTP_CONFIG.window,
+  });
+}
+```
 - **Location**: `src/services/mfa/mfa.service.ts`
 - **Purpose**: Handles MFA business logic and API calls
 - **Key Functions**:
@@ -22,13 +99,59 @@
   - `generateBackupCodes()`: Generates secure backup codes (12-char format: XXXX-XXXX-XXXX)
   - `verifyBackupCode()`: Verifies backup codes using bcrypt hashing
 
-### 3. Security Measures
-- All SECURITY DEFINER functions include `SET search_path = public`
-- Backup codes are hashed using bcrypt before storage
-- Audit logging for all security-sensitive operations
-- Rate limiting and account lockout for failed attempts
-- Secure session management
-  - `generateBackupCodes()`: Creates backup codes
+## Backup Code Management
+
+### 1. Code Generation
+- 12-character alphanumeric codes
+- Hyphen-separated for readability (XXXX-XXXX-XXXX)
+- One-time use
+- Automatically expires after first use or 90 days
+
+### 2. Storage
+```sql
+CREATE TABLE mfa_backup_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  code_hash TEXT NOT NULL,
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  used_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '90 days')
+);
+```
+
+### 3. Code Verification Flow
+1. User enters backup code
+2. System looks up unused, unexpired code
+3. On successful verification:
+   - Marks code as used
+   - Records usage timestamp
+   - Generates audit log entry
+   - Issues new session token
+
+## Security Considerations
+
+### 1. Rate Limiting
+- 5 attempts per 15 minutes for MFA verification
+- 3 failed attempts trigger account lockout
+- 30-minute lockout period
+- Email notification on lockout
+
+### 2. Session Management
+- MFA verification required for sensitive operations
+- Session invalidation on:
+  - Password change
+  - MFA disable
+  - Suspicious activity
+
+### 3. Audit Logging
+All MFA-related events are logged with:
+- Timestamp
+- User ID
+- IP address
+- User agent
+- Action type
+- Success/failure status
 
 ### 3. Database Tables
 
