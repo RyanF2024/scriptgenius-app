@@ -9,8 +9,6 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["jest", "node", "@testing-library/jest-dom"],
-    
     // Strict Type-Checking
     "strict": true,
     "noImplicitAny": true,
@@ -62,7 +60,6 @@
     "noErrorTruncation": true,
     "preserveWatchOutput": true,
     "pretty": true,
-    "types": ["node", "jest", "@testing-library/jest-dom"],
     
     // Type Checking
     "useUnknownInCatchVariables": true,

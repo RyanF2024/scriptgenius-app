@@ -1,17 +1,83 @@
 # Profile Management
 
-This document outlines the profile management system, including avatar uploads, file validation, and security policies.
+This document outlines the profile management system, including avatar uploads, file validation, and security policies using Supabase Storage and Row Level Security (RLS).
 
 ## Table of Contents
+- [Architecture Overview](#architecture-overview)
 - [Avatar Upload](#avatar-upload)
 - [File Validation](#file-validation)
 - [Storage Structure](#storage-structure)
 - [RLS Policies](#rls-policies)
+- [Error Handling](#error-handling)
+- [Rate Limiting](#rate-limiting)
 - [API Reference](#api-reference)
+
+## Architecture Overview
+
+### Components
+1. **Frontend**
+   - Profile form with file upload
+   - Image preview and cropping
+   - Progress indicators
+   - Error handling and validation
+
+2. **API Layer**
+   - File upload endpoints
+   - Profile update handlers
+   - Validation middleware
+
+3. **Storage**
+   - Supabase Storage for file storage
+   - Database for metadata and user references
+   - CDN for optimized delivery
+
+### Data Flow
+1. User selects file
+2. Client-side validation
+3. File upload to Supabase Storage
+4. Database record creation
+5. CDN URL generation
+6. UI update with new avatar
 
 ## Avatar Upload
 
-### Client-Side Implementation
+### Client-Side Implementation with Supabase
+
+```typescript
+// lib/supabase/storage.ts
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export async function uploadAvatar(userId: string, file: File) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${userId}-${Date.now()}.${fileExt}`;
+  const filePath = `avatars/${fileName}`;
+
+  const { data, error } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type,
+    });
+
+  if (error) throw error;
+  
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(data.path);
+
+  return {
+    path: data.path,
+    url: publicUrl,
+  };
+}
+```
 
 ```tsx
 import { useProfile } from '@/contexts/ProfileContext';
@@ -69,6 +135,69 @@ export function AvatarUpload() {
 ### Client-Side Validation
 
 ```typescript
+// utils/fileValidation.ts
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+export function validateFile(file: File): { valid: boolean; error?: string } {
+  // Check file type
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return {
+      valid: false,
+      error: 'Only JPG, PNG, and WebP images are allowed',
+    };
+  }
+
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    return {
+      valid: false,
+      error: 'File size must be less than 5MB',
+    };
+  }
+
+  // Check image dimensions if needed
+  return { valid: true };
+}
+```
+
+### Server-Side Validation
+
+```typescript
+// pages/api/upload-avatar.ts
+import { createClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { NextApiRequest, NextApiResponse } from 'next';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Verify user session
+  const supabase = createServerSupabaseClient({ req, res });
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Process file upload...
+}
+```
+
+### Client-Side Validation
+
+```typescript
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -120,6 +249,41 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 ### Supabase Storage Bucket: `avatars`
 
+```
+avatars/
+  ├── user_<uuid>/
+  │   ├── avatar_<timestamp>.<ext>  # Current avatar
+  │   └── avatar_<timestamp>_<size>.<ext>  # Optimized versions
+  └── temp_uploads/  # Temporary storage for uploads
+```
+
+### Database Schema
+
+```sql
+-- User profiles table
+CREATE TABLE public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE,
+  avatar_url TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (id)
+);
+
+-- Storage policies for avatars
+CREATE POLICY "Users can view their own avatars"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'avatars' AND auth.uid() = (storage.foldername(name))[1]::uuid);
+
+CREATE POLICY "Users can upload their own avatars"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'avatars' AND 
+    auth.role() = 'authenticated' AND
+    auth.uid() = (storage.foldername(name))[1]::uuid
+  );
+```
+
+### Supabase Storage Bucket: `avatars`
+
 ```bash
 avatars/
   ├── {user_id}/
@@ -143,6 +307,82 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ```
 
 ## RLS Policies
+
+### Storage Policies
+
+```sql
+-- Allow public access to avatars (read-only)
+CREATE POLICY "Public Access to Avatars"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'avatars');
+
+-- Allow users to update their own avatars
+CREATE POLICY "Users can update their own avatars"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'avatars' AND 
+    auth.role() = 'authenticated' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Allow users to delete their own avatars
+CREATE POLICY "Users can delete their own avatars"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'avatars' AND 
+    auth.role() = 'authenticated' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+```
+
+### Row Level Security
+
+```sql
+-- Enable RLS on profiles table
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Users can view all profiles
+CREATE POLICY "Public profiles are viewable by everyone."
+  ON profiles FOR SELECT
+  USING (true);
+
+-- Users can update their own profile
+CREATE POLICY "Users can update own profile."
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id);
+```
+
+## Error Handling
+
+### Common Error Responses
+
+```json
+{
+  "error": "UPLOAD_ERROR",
+  "message": "Failed to upload file",
+  "details": "File size exceeds limit"
+}
+```
+
+### Error Types
+- `INVALID_FILE_TYPE`: Unsupported file type
+- `FILE_TOO_LARGE`: File exceeds size limit
+- `UPLOAD_FAILED`: General upload failure
+- `PERMISSION_DENIED`: Insufficient permissions
+- `RATE_LIMIT_EXCEEDED`: Too many upload attempts
+
+## Rate Limiting
+
+### Client-Side Rate Limiting
+- 5 uploads per minute per user
+- 50MB total upload size per hour
+- 1000 requests per hour per IP
+
+### Server-Side Protection
+- Request validation
+- File size limits
+- MIME type verification
+- Virus scanning (if applicable)
 
 ### Profiles Table Policies
 
