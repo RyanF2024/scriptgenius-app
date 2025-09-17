@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Icons } from '@/components/icons'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export default function Home() {
   const features = [
@@ -11,19 +11,19 @@ export default function Home() {
       description: 'Get detailed script analysis with industry-standard coverage in minutes.',
     },
     {
-      icon: <Icons.fileEdit className="h-8 w-8 text-primary" />,
+      icon: <Icons.edit className="h-8 w-8 text-primary" />,
       title: 'Development Notes',
       description: 'Receive actionable feedback to improve your script with structured development notes.',
     },
     {
       icon: <Icons.fileBarChart2 className="h-8 w-8 text-primary" />,
-      title: 'Market Insights',
-      description: 'Understand how your script compares to industry standards and market trends.',
+      title: 'Character Analysis',
+      description: 'Deep dive into character development with comprehensive analysis and insights.',
     },
     {
-      icon: <Icons.fileClock className="h-8 w-8 text-primary" />,
-      title: 'Fast Turnaround',
-      description: 'Get your script analyzed in minutes, not weeks like traditional coverage services.',
+      icon: <Icons.fileType className="h-8 w-8 text-primary" />,
+      title: 'Formatting',
+      description: 'Ensure your script follows industry-standard formatting for maximum professionalism.',
     },
   ]
 

@@ -1,8 +1,10 @@
 // Bundle analyzer configuration
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
+import withBundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzerPlugin = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
   openAnalyzer: true,
-})
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -232,7 +234,7 @@ const nextConfig = {
 };
 
 // Injected content via Sentry wizard below
-const { withSentryConfig } = require('@sentry/nextjs');
+import { withSentryConfig } from '@sentry/nextjs';
 
 const sentryWebpackPluginOptions = {
   // Suppresses source map uploading logs during build
@@ -263,6 +265,8 @@ const sentryConfig = withSentryConfig(nextConfig, sentryWebpackPluginOptions, {
 });
 
 // Apply bundle analyzer on top of Sentry config
-module.exports = process.env.ANALYZE 
-  ? withBundleAnalyzer(sentryConfig)
-  : sentryConfig;
+const config = process.env.ANALYZE === 'true' 
+  ? withBundleAnalyzerPlugin(nextConfig) 
+  : nextConfig;
+
+export default config;

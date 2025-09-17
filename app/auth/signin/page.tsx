@@ -37,9 +37,9 @@ export default function SignIn() {
       router.refresh()
     } catch (error: any) {
       toast({
-        title: 'Error signing in',
+        title: 'Error',
         description: error.error_description || error.message,
-        variant: 'destructive',
+        type: 'error'
       })
     } finally {
       setIsLoading(false)
@@ -49,22 +49,23 @@ export default function SignIn() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true)
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${
-            searchParams.get('redirectedFrom') || '/dashboard'
-          }`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
       if (error) throw error
+
+      // The OAuth flow will handle the rest
     } catch (error: any) {
       toast({
-        title: 'Error signing in with Google',
+        title: 'Error',
         description: error.error_description || error.message,
-        variant: 'destructive',
+        type: 'error'
       })
+    } finally {
       setIsGoogleLoading(false)
     }
   }
